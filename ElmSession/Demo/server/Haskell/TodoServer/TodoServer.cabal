@@ -1,0 +1,46 @@
+name:                TodoServer
+version:             0.1.0.0
+synopsis:            Haskell-Backend für meine Todo-App Demo auf der DWX 2018
+homepage:            https://github.com/CarstenKoenig/DWX2018/ElmSession/Demo/server/Haskell/TodoServer#readme
+license:             BSD3
+license-file:        LICENSE
+author:              Carsten Koenig
+maintainer:          Carsten.Koenig@hotmail.de
+copyright:           2018 Carsten Koenig
+category:            Web
+build-type:          Simple
+extra-source-files:  README.md
+cabal-version:       >=1.10
+
+library
+  hs-source-dirs:      src
+  exposed-modules:     App
+  other-modules:       Models
+                     , Page
+  build-depends:       base >= 4.7 && < 5
+                     , aeson
+                     , blaze-html
+                     , blaze-markup
+                     , bytestring
+                     , mtl
+                     , servant-blaze
+                     , servant-server
+                     , servant-websockets
+                     , sqlite-simple
+                     , text
+                     , wai
+                     , warp
+                     , websockets
+  default-language:    Haskell2010
+
+executable TodoServer-exe
+  hs-source-dirs:      app
+  main-is:             Main.hs
+  ghc-options:         -threaded -rtsopts -with-rtsopts=-N
+  build-depends:       base
+                     , TodoServer
+  default-language:    Haskell2010
+
+source-repository head
+  type:     git
+  location: https://github.com/CarstenKoenig/DWX2018
