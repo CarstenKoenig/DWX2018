@@ -2,7 +2,7 @@
 build:
 	stack build
 
-.PHONY: deploy
+.PHONY: run
 run: build
 	stack exec TodoServer-exe
 

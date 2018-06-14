@@ -55,4 +55,4 @@ server =
       return Page.index
 
     staticHandler =
-      Servant.serveDirectoryWebApp "../../../static"
+      Servant.serveDirectoryWebApp "../../static"
