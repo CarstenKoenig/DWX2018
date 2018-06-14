@@ -17,6 +17,7 @@ library
   exposed-modules:     App
   other-modules:       Models
                      , Page
+                     , Db
   build-depends:       base >= 4.7 && < 5
                      , aeson
                      , blaze-html
