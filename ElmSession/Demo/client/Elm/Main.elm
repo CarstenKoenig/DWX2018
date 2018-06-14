@@ -92,6 +92,7 @@ type Msg
     | ChangeTaskText String
     | MouseOver TaskId
     | MouseOut TaskId
+    | SubmitNewTask String
     | SubmitTaskTextChange TaskId String
 
 
@@ -145,6 +146,20 @@ update msg model =
                 _ ->
                     model ! []
 
+        SubmitNewTask text ->
+            let
+                neuerTask =
+                    Task
+                        (Dict.size model.tasks + 1)
+                        text
+                        False
+            in
+                { model
+                    | tasks = Dict.insert neuerTask.id neuerTask model.tasks
+                    , inputText = ""
+                }
+                    ! []
+
         SubmitTaskTextChange taskId text ->
             let
                 neueTasks =
@@ -174,19 +189,26 @@ view model =
                     |> Card.block []
                         [ Block.custom
                             (Form.formInline
-                                [ Ev.onSubmit NoOp ]
-                                [ Input.text
-                                    [ Input.onInput ChangeInputText
-                                    , Input.placeholder "was ist zu tun?"
-                                    , Input.attrs [ Size.w75 ]
-                                    , Input.value model.inputText
-                                    ]
-                                , Button.button
-                                    [ Button.primary
-                                    , Button.disabled (not <| submitAllowed model)
-                                    , Button.attrs [ Attr.type_ "submit" ]
-                                    ]
-                                    [ Html.text "ok"
+                                [ Ev.onSubmit (SubmitNewTask model.inputText) ]
+                                [ Grid.row
+                                    [ Row.attrs [ Size.w100 ] ]
+                                    [ Grid.col [ Col.xs ]
+                                        [ Input.text
+                                            [ Input.onInput ChangeInputText
+                                            , Input.placeholder "was ist zu tun?"
+                                            , Input.attrs [ Size.w100 ]
+                                            , Input.value model.inputText
+                                            ]
+                                        ]
+                                    , Grid.col [ Col.xsAuto ]
+                                        [ Button.button
+                                            [ Button.primary
+                                            , Button.disabled (not <| submitAllowed model)
+                                            , Button.attrs [ Attr.type_ "submit" ]
+                                            ]
+                                            [ Html.text "ok"
+                                            ]
+                                        ]
                                     ]
                                 ]
                             )
