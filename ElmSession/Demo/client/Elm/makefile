@@ -1,8 +1,8 @@
-output/todo.js: $(wildcard src/***/*.elm)
+.PHONY: build
+build:
 	elm make --yes src/Main.elm --output ./output/todo.js
 
-.PHONY: deploy
-deploy: output/todo.js
+deploy: build
 	cp ./output/todo.js ../../static/todo.js
 
 .PHONY: clean

@@ -27,4 +27,4 @@ postUpdate baseUrl task =
 
 postNew : Url -> String -> Request Task
 postNew baseUrl text =
-    Http.post (baseUrl ++ "todos") (Http.jsonBody (Enc.string text)) Model.Task.decoder
+    Http.post (baseUrl ++ "todos/new") (Http.jsonBody (Enc.string text)) Model.Task.decoder

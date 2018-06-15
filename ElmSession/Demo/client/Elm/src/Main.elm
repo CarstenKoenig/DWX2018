@@ -48,19 +48,19 @@ submitAllowed model =
 sortTasks : List Task -> List Task
 sortTasks tasks =
     let
-        sorting t1 t2 =
-            case ( t1.finished, t2.finished ) of
-                ( True, True ) ->
-                    compare t1.id t2.id
-
+        sorting task1 task2 =
+            case ( task1.finished, task2.finished ) of
                 ( False, False ) ->
-                    compare t1.id t2.id
+                    compare task1.id task2.id
 
                 ( False, True ) ->
                     LT
 
                 ( True, False ) ->
                     GT
+
+                ( True, True ) ->
+                    compare task1.id task2.id
     in
         List.sortWith sorting tasks
 
@@ -82,13 +82,14 @@ type alias Flags =
 
 type Msg
     = NoOp
+    | GetTasksResponse (Result Http.Error (List Task))
     | ChangeInputText String
-    | ChangeTaskText String
     | MouseOver TaskId
     | MouseOut TaskId
     | SubmitNewTask String
+    | NewTaskResponse (Result Http.Error Task)
+    | ChangeTaskText String
     | SubmitTaskTextChange TaskId String
-    | GetTasksResponse (Result Http.Error (List Task))
 
 
 init : Flags -> ( Model, Cmd Msg )
@@ -118,13 +119,13 @@ update msg model =
 
         GetTasksResponse (Ok tasks) ->
             let
-                newDict =
+                newTasks =
                     tasks
                         |> List.map (\task -> ( task.id, task ))
                         |> Dict.fromList
             in
                 { model
-                    | tasks = newDict
+                    | tasks = newTasks
                     , httpError = Nothing
                     , isBusy = False
                 }
@@ -133,13 +134,32 @@ update msg model =
         ChangeInputText text ->
             { model | inputText = text } ! []
 
-        ChangeTaskText text ->
-            case model.activeTask of
-                Just ( tId, _ ) ->
-                    { model | activeTask = Just ( tId, Just text ) } ! []
+        SubmitNewTask text ->
+            { model
+                | isBusy = True
+                , httpError = Nothing
+            }
+                ! [ Http.send NewTaskResponse (Api.Task.postNew model.flags.baseUrl text) ]
 
-                Nothing ->
-                    model ! []
+        NewTaskResponse (Err err) ->
+            { model
+                | httpError = Just err
+                , isBusy = False
+            }
+                ! []
+
+        NewTaskResponse (Ok task) ->
+            let
+                newTasks =
+                    model.tasks
+                        |> Dict.insert task.id task
+            in
+                { model
+                    | tasks = newTasks
+                    , httpError = Nothing
+                    , isBusy = False
+                }
+                    ! []
 
         MouseOver tId ->
             case model.activeTask of
@@ -160,19 +180,13 @@ update msg model =
                 _ ->
                     model ! []
 
-        SubmitNewTask text ->
-            let
-                neuerTask =
-                    Task
-                        (Dict.size model.tasks + 1)
-                        text
-                        False
-            in
-                { model
-                    | tasks = Dict.insert neuerTask.id neuerTask model.tasks
-                    , inputText = ""
-                }
-                    ! []
+        ChangeTaskText text ->
+            case model.activeTask of
+                Just ( tId, _ ) ->
+                    { model | activeTask = Just ( tId, Just text ) } ! []
+
+                Nothing ->
+                    model ! []
 
         SubmitTaskTextChange taskId text ->
             let
