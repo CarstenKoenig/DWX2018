@@ -49,14 +49,14 @@ startApp :: IO ()
 startApp = do
   dbPath <- getDbPath
   putStrLn $ "initializing Database in " ++ dbPath
-  Db.initDb dbPath
+  handle <- Db.initDb dbPath
 
   port <- getPort
   putStrLn $ "starting Server on " ++ show port
-  run port $ app dbPath
+  run port $ app handle
 
 
-app :: FilePath -> Application
+app :: Db.Handle -> Application
 app = Servant.serve api . server 
 
 
@@ -64,9 +64,9 @@ api :: Proxy API
 api = Proxy
 
 
-server :: FilePath -> Server API
-server dbFile = 
-  todoHandlers 
+server :: Db.Handle -> Server API
+server handle = 
+  todoHandlers
   :<|> pageHandler
   :<|> staticHandler
   where
@@ -74,27 +74,27 @@ server dbFile =
       getAllHandler :<|> updateHandler :<|> newHandler :<|> deleteHandler :<|> queryHandler
 
     getAllHandler =
-      Db.withConnection dbFile Db.listTasks
+      Db.listTasks handle
 
     updateHandler task = do
       liftIO $ putStrLn $ "updating task " ++ show (Db.id task)
-      Db.withConnection dbFile $ Db.modifyTask task
+      Db.modifyTask handle task
       throwError $ redirect (Db.id task)
 
     newHandler txt = do
-      tId <- Db.withConnection dbFile $ Db.insertTask txt
+      tId <- Db.insertTask handle txt
       liftIO $ putStrLn $ "created new task - redirecting to " ++ show tId
       throwError $ redirect tId
 
     deleteHandler tId = do
-      Db.withConnection dbFile $ Db.deleteTask tId
+      Db.deleteTask handle tId
       liftIO $ putStrLn $ "deleted task " ++ show tId
       throwError redirectAll
   
 
     queryHandler tId = do
       liftIO $ putStrLn $ "getting task " ++ show tId
-      Db.withConnection dbFile $ Db.getTask tId
+      Db.getTask handle tId
 
     pageHandler = 
       return Page.index
