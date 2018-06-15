@@ -36,13 +36,8 @@ type alias Model =
     , httpError : Maybe Http.Error
     , tasks : Dict TaskId Task
     , inputText : String
-    , activeTask : Maybe ( TaskId, String )
+    , editTask : Maybe ( TaskId, String )
     }
-
-
-submitAllowed : Model -> Bool
-submitAllowed model =
-    String.length model.inputText > 5
 
 
 sortTasks : List Task -> List Task
@@ -87,16 +82,20 @@ type Msg
     | SubmitNewTask String
     | UpdateTaskResponse (Result Http.Error Task)
     | ToggleTask TaskId Bool
+    | EditTask TaskId String
+    | ChangeEditText String
+    | CancelEdit
+    | SubmitEditTask TaskId String
 
 
 init : Flags -> ( Model, Cmd Msg )
 init flags =
     { flags = flags
-    , inputText = ""
-    , activeTask = Nothing
-    , tasks = Dict.empty
     , httpError = Nothing
     , isBusy = True
+    , tasks = Dict.empty
+    , inputText = ""
+    , editTask = Nothing
     }
         ! [ Http.send GetTasksResponse (Api.Task.getAll flags.baseUrl) ]
 
@@ -135,6 +134,7 @@ update msg model =
             { model
                 | isBusy = True
                 , httpError = Nothing
+                , editTask = Nothing
             }
                 ! [ Http.send UpdateTaskResponse (Api.Task.postNew model.flags.baseUrl text) ]
 
@@ -175,6 +175,37 @@ update msg model =
                         }
                             ! [ Http.send UpdateTaskResponse (Api.Task.postUpdate model.flags.baseUrl task) ]
 
+        EditTask taskId text ->
+            { model | editTask = Just ( taskId, text ) } ! []
+
+        ChangeEditText text ->
+            let
+                newEdit =
+                    model.editTask |> Maybe.map (\( taskId, _ ) -> ( taskId, text ))
+            in
+                { model | editTask = newEdit } ! []
+
+        CancelEdit ->
+            { model | editTask = Nothing } ! []
+
+        SubmitEditTask taskId text ->
+            let
+                changedTask =
+                    Dict.get taskId model.tasks
+                        |> Maybe.map (\task -> { task | text = text })
+            in
+                case changedTask of
+                    Nothing ->
+                        model ! []
+
+                    Just task ->
+                        { model
+                            | isBusy = True
+                            , httpError = Nothing
+                            , editTask = Nothing
+                        }
+                            ! [ Http.send UpdateTaskResponse (Api.Task.postUpdate model.flags.baseUrl task) ]
+
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
@@ -196,7 +227,7 @@ view model =
                             (Form.formInline
                                 [ Ev.onSubmit (SubmitNewTask model.inputText)
                                 , Space.m0
-                                , Attr.disabled model.isBusy
+                                , Attr.disabled (model.isBusy || model.editTask /= Nothing)
                                 ]
                                 [ Grid.row
                                     [ Row.attrs [ Size.w100 ] ]
@@ -211,7 +242,7 @@ view model =
                                     , Grid.col [ Col.xsAuto ]
                                         [ Button.button
                                             [ Button.primary
-                                            , Button.disabled (not <| submitAllowed model)
+                                            , Button.disabled (String.length model.inputText < 5)
                                             , Button.attrs [ Attr.type_ "submit" ]
                                             ]
                                             [ Html.text "ok"
@@ -235,8 +266,8 @@ view model =
 viewTask : Model -> Task -> List.Item Msg
 viewTask model task =
     let
-        ( isActive, activeText ) =
-            case model.activeTask of
+        ( isEdit, editText ) =
+            case model.editTask of
                 Just ( activeId, activeText ) ->
                     ( activeId == task.id, activeText )
 
@@ -272,18 +303,33 @@ viewTask model task =
         events =
             let
                 click =
-                    if isDisabled then
+                    if isDisabled || isEdit then
                         []
                     else
-                        [ Ev.onClick (ToggleTask task.id (not task.finished)) ]
+                        [ Ev.onClick (ToggleTask task.id (not task.finished))
+                        , Ev.onDoubleClick (EditTask task.id task.text)
+                        ]
             in
                 [ List.attrs click ]
 
         content =
-            Html.strong
-                [ textStyle ]
-                [ Html.text task.text
-                ]
+            if isEdit then
+                Form.formInline
+                    [ Ev.onSubmit (SubmitEditTask task.id editText)
+                    , Space.m0
+                    , Attr.disabled model.isBusy
+                    ]
+                    [ Input.text
+                        [ Input.onInput ChangeEditText
+                        , Input.attrs [ Size.w100, Ev.onBlur CancelEdit ]
+                        , Input.value editText
+                        ]
+                    ]
+            else
+                Html.strong
+                    [ textStyle ]
+                    [ Html.text task.text
+                    ]
     in
         List.li
             (optStyles ++ optColor ++ events)
