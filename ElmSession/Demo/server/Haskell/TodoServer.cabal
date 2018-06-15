@@ -16,6 +16,8 @@ library
   hs-source-dirs:      src
   exposed-modules:     App
   other-modules:       Models
+                     , RestApi
+                     , RouteApi
                      , Page
                      , Db
   build-depends:       base >= 4.7 && < 5
@@ -33,6 +35,7 @@ library
                      , warp
                      , websockets
   default-language:    Haskell2010
+  ghc-options:       -Wall
 
 executable TodoServer-exe
   hs-source-dirs:      app

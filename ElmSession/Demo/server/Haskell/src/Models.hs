@@ -8,7 +8,9 @@ import Data.Aeson.TH (deriveJSON, defaultOptions)
 import Data.Int (Int64)
 import Data.Text (Text)
 
+
 type TaskId = Int64
+
 
 data Task = Task { id       :: TaskId
                  , text     :: Text

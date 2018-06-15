@@ -28,6 +28,7 @@ links =
       , "static/style.css"
       ]
 
+
 scripts :: H.Html
 scripts = do
   traverse_ (\ref -> H.script "" ! A.src ref) jsSrcs
