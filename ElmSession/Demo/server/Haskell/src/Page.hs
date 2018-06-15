@@ -24,6 +24,7 @@ links =
   where
     cssSrcs =
       [ "static/lib/bootstrap/dist/css/bootstrap.min.css"
+      , "static/lib/fontawesome/dist/fontawesome-all.min.css"
       , "static/style.css"
       ]
 

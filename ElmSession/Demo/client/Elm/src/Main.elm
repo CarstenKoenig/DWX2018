@@ -2,6 +2,7 @@ module Main exposing (..)
 
 import Api.Task exposing (Url)
 import Bootstrap.Button as Button
+import Bootstrap.ButtonGroup as BGroup
 import Bootstrap.Card as Card
 import Bootstrap.Card.Block as Block
 import Bootstrap.Form as Form
@@ -13,11 +14,14 @@ import Bootstrap.ListGroup as List
 import Bootstrap.Utilities.Size as Size
 import Bootstrap.Utilities.Spacing as Space
 import Dict exposing (Dict)
+import Dom exposing (focus)
+import FontAwesome as FontA
 import Html as Html exposing (Html)
 import Html.Attributes as Attr
 import Html.Events as Ev
 import Http
 import Model.Task exposing (TaskId, Task)
+import Task
 
 
 main : Program Flags Model Msg
@@ -176,7 +180,7 @@ update msg model =
                             ! [ Http.send UpdateTaskResponse (Api.Task.postUpdate model.flags.baseUrl task) ]
 
         EditTask taskId text ->
-            { model | editTask = Just ( taskId, text ) } ! []
+            { model | editTask = Just ( taskId, text ) } ! [ Task.attempt (always NoOp) (focus ("task_" ++ toString taskId)) ]
 
         ChangeEditText text ->
             let
@@ -306,9 +310,7 @@ viewTask model task =
                     if isDisabled || isEdit then
                         []
                     else
-                        [ Ev.onClick (ToggleTask task.id (not task.finished))
-                        , Ev.onDoubleClick (EditTask task.id task.text)
-                        ]
+                        [ Ev.onClick (ToggleTask task.id (not task.finished)) ]
             in
                 [ List.attrs click ]
 
@@ -321,7 +323,11 @@ viewTask model task =
                     ]
                     [ Input.text
                         [ Input.onInput ChangeEditText
-                        , Input.attrs [ Size.w100, Ev.onBlur CancelEdit ]
+                        , Input.attrs
+                            [ Size.w100
+                            , Ev.onBlur CancelEdit
+                            , Attr.id ("task_" ++ toString task.id)
+                            ]
                         , Input.value editText
                         ]
                     ]
@@ -336,7 +342,27 @@ viewTask model task =
             [ Grid.row
                 []
                 [ Grid.col
-                    [ Col.xs10 ]
+                    [ Col.xs ]
                     [ content ]
+                , Grid.col
+                    [ Col.xsAuto ]
+                    (if isEdit then
+                        []
+                     else
+                        [ BGroup.buttonGroup
+                            [ BGroup.small ]
+                            [ BGroup.button
+                                [ Button.outlineWarning
+                                , Button.onClick (EditTask task.id task.text)
+                                ]
+                                [ FontA.icon FontA.edit ]
+                            , BGroup.button
+                                [ Button.outlineDanger
+                                , Button.onClick (EditTask task.id task.text)
+                                ]
+                                [ FontA.icon FontA.trash ]
+                            ]
+                        ]
+                    )
                 ]
             ]
