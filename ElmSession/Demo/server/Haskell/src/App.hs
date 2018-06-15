@@ -27,8 +27,9 @@ import           Text.Blaze.Html4.Strict (Markup)
 type API = 
   ( "todos" :> (
     Get '[JSON] [Db.Task]
-    :<|> ReqBody '[JSON] Db.Task :> Post '[JSON] Db.Task
-    :<|> "new" :> ReqBody '[JSON] Text :> Post '[JSON] Db.Task
+    :<|> ReqBody '[JSON] Db.Task :> Put '[JSON] Db.Task
+    :<|> ReqBody '[JSON] Text :> Post '[JSON] Db.Task
+    :<|> Capture "id" Db.TaskId :> Delete '[JSON] [Db.Task]
     :<|> Capture "id" Db.TaskId :> Get '[JSON] (Maybe Db.Task)
     )
   )
@@ -70,7 +71,7 @@ server dbFile =
   :<|> staticHandler
   where
     todoHandlers =
-      getAllHandler :<|> updateHandler :<|> newHandler :<|> queryHandler
+      getAllHandler :<|> updateHandler :<|> newHandler :<|> deleteHandler :<|> queryHandler
 
     getAllHandler =
       Db.withConnection dbFile Db.listTasks
@@ -84,6 +85,12 @@ server dbFile =
       tId <- Db.withConnection dbFile $ Db.insertTask txt
       liftIO $ putStrLn $ "created new task - redirecting to " ++ show tId
       throwError $ redirect tId
+
+    deleteHandler tId = do
+      Db.withConnection dbFile $ Db.deleteTask tId
+      liftIO $ putStrLn $ "deleted task " ++ show tId
+      throwError redirectAll
+  
 
     queryHandler tId = do
       liftIO $ putStrLn $ "getting task " ++ show tId
@@ -102,3 +109,11 @@ redirect tId = addLoc tId err303
     addLoc tId err =
       let headers = ("Location", pack ("/todos/" ++ show tId)) : errHeaders err
       in err { errHeaders = headers }
+
+redirectAll :: ServantErr
+redirectAll = addLoc err303
+  where
+    addLoc err =
+      let headers = ("Location", "/todos") : errHeaders err
+      in err { errHeaders = headers }
+      

@@ -89,6 +89,7 @@ type Msg
     | EditTask TaskId String
     | ChangeEditText String
     | CancelEdit
+    | DeleteTask TaskId
     | SubmitEditTask TaskId String
 
 
@@ -140,12 +141,14 @@ update msg model =
                 , httpError = Nothing
                 , editTask = Nothing
             }
-                ! [ Http.send UpdateTaskResponse (Api.Task.postNew model.flags.baseUrl text) ]
+                ! [ Http.send UpdateTaskResponse (Api.Task.new model.flags.baseUrl text) ]
 
         UpdateTaskResponse (Err err) ->
             { model
                 | httpError = Just err
                 , isBusy = False
+                , editTask = Nothing
+                , inputText = ""
             }
                 ! []
 
@@ -159,6 +162,8 @@ update msg model =
                     | tasks = newTasks
                     , httpError = Nothing
                     , isBusy = False
+                    , inputText = ""
+                    , editTask = Nothing
                 }
                     ! []
 
@@ -177,7 +182,7 @@ update msg model =
                             | isBusy = True
                             , httpError = Nothing
                         }
-                            ! [ Http.send UpdateTaskResponse (Api.Task.postUpdate model.flags.baseUrl task) ]
+                            ! [ Http.send UpdateTaskResponse (Api.Task.update model.flags.baseUrl task) ]
 
         EditTask taskId text ->
             { model | editTask = Just ( taskId, text ) } ! [ Task.attempt (always NoOp) (focus ("task_" ++ toString taskId)) ]
@@ -208,7 +213,15 @@ update msg model =
                             , httpError = Nothing
                             , editTask = Nothing
                         }
-                            ! [ Http.send UpdateTaskResponse (Api.Task.postUpdate model.flags.baseUrl task) ]
+                            ! [ Http.send UpdateTaskResponse (Api.Task.update model.flags.baseUrl task) ]
+
+        DeleteTask taskId ->
+            { model
+                | editTask = Nothing
+                , isBusy = True
+                , httpError = Nothing
+            }
+                ! [ Http.send GetTasksResponse (Api.Task.delete model.flags.baseUrl taskId) ]
 
 
 subscriptions : Model -> Sub Msg
@@ -283,9 +296,12 @@ viewTask model task =
 
         textStyle =
             if task.finished then
-                Attr.style [ ( "text-decoration", "line-through" ) ]
+                Attr.style
+                    [ ( "text-decoration", "line-through" )
+                    , ( "cursor", "pointer" )
+                    ]
             else
-                Attr.style []
+                Attr.style [ ( "cursor", "pointer" ) ]
 
         optDisabled =
             if isDisabled then
@@ -301,18 +317,11 @@ viewTask model task =
             else
                 [ List.warning ]
 
-        optStyles =
-            [ List.attrs [ Attr.style [ ( "cursor", "pointer" ) ] ] ]
-
-        events =
-            let
-                click =
-                    if isDisabled || isEdit then
-                        []
-                    else
-                        [ Ev.onClick (ToggleTask task.id (not task.finished)) ]
-            in
-                [ List.attrs click ]
+        taskEvents =
+            if isDisabled || isEdit then
+                []
+            else
+                [ Ev.onClick (ToggleTask task.id (not task.finished)) ]
 
         content =
             if isEdit then
@@ -333,12 +342,11 @@ viewTask model task =
                     ]
             else
                 Html.strong
-                    [ textStyle ]
-                    [ Html.text task.text
-                    ]
+                    (textStyle :: taskEvents)
+                    [ Html.text task.text ]
     in
         List.li
-            (optStyles ++ optColor ++ events)
+            optColor
             [ Grid.row
                 []
                 [ Grid.col
@@ -358,7 +366,7 @@ viewTask model task =
                                 [ FontA.icon FontA.edit ]
                             , BGroup.button
                                 [ Button.outlineDanger
-                                , Button.onClick (EditTask task.id task.text)
+                                , Button.onClick (DeleteTask task.id)
                                 ]
                                 [ FontA.icon FontA.trash ]
                             ]

@@ -1,4 +1,4 @@
-module Api.Task exposing (Url, get, getAll, postUpdate, postNew)
+module Api.Task exposing (Url, get, getAll, update, delete, new)
 
 import Http exposing (Request)
 import Json.Decode as Json
@@ -20,11 +20,32 @@ getAll baseUrl =
     Http.get (baseUrl ++ "todos") (Json.list Model.Task.decoder)
 
 
-postUpdate : Url -> Task -> Request Task
-postUpdate baseUrl task =
-    Http.post (baseUrl ++ "todos") (Http.jsonBody (Model.Task.encode task)) Model.Task.decoder
+update : Url -> Task -> Request Task
+update baseUrl task =
+    Http.request
+        { method = "put"
+        , headers = []
+        , url = baseUrl ++ "todos"
+        , body = Http.jsonBody (Model.Task.encode task)
+        , expect = Http.expectJson Model.Task.decoder
+        , timeout = Nothing
+        , withCredentials = False
+        }
 
 
-postNew : Url -> String -> Request Task
-postNew baseUrl text =
-    Http.post (baseUrl ++ "todos/new") (Http.jsonBody (Enc.string text)) Model.Task.decoder
+delete : Url -> TaskId -> Request (List Task)
+delete baseUrl taskId =
+    Http.request
+        { method = "delete"
+        , headers = []
+        , url = baseUrl ++ "todos/" ++ toString taskId
+        , body = Http.emptyBody
+        , expect = Http.expectJson (Json.list Model.Task.decoder)
+        , timeout = Nothing
+        , withCredentials = False
+        }
+
+
+new : Url -> String -> Request Task
+new baseUrl text =
+    Http.post (baseUrl ++ "todos") (Http.jsonBody (Enc.string text)) Model.Task.decoder
