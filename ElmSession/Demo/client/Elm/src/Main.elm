@@ -1,5 +1,6 @@
 module Main exposing (..)
 
+import Api.Task exposing (Url)
 import Bootstrap.Button as Button
 import Bootstrap.Card as Card
 import Bootstrap.Card.Block as Block
@@ -15,6 +16,7 @@ import Dict exposing (Dict)
 import Html as Html exposing (Html)
 import Html.Attributes as Attr
 import Html.Events as Ev
+import Http
 import Model.Task exposing (TaskId, Task)
 
 
@@ -33,6 +35,8 @@ type alias Model =
     , inputText : String
     , activeTask : Maybe ( TaskId, Maybe String )
     , tasks : Dict TaskId Task
+    , httpError : Maybe Http.Error
+    , isBusy : Bool
     }
 
 
@@ -84,6 +88,7 @@ type Msg
     | MouseOut TaskId
     | SubmitNewTask String
     | SubmitTaskTextChange TaskId String
+    | GetTasksResponse (Result Http.Error (List Task))
 
 
 init : Flags -> ( Model, Cmd Msg )
@@ -91,13 +96,11 @@ init flags =
     { flags = flags
     , inputText = ""
     , activeTask = Nothing
-    , tasks =
-        [ ( 1, Task 1 "Test" True )
-        , ( 2, Task 2 "nicht fertig" False )
-        ]
-            |> Dict.fromList
+    , tasks = Dict.empty
+    , httpError = Nothing
+    , isBusy = True
     }
-        ! []
+        ! [ Http.send GetTasksResponse (Api.Task.getAll flags.baseUrl) ]
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -105,6 +108,27 @@ update msg model =
     case msg of
         NoOp ->
             model ! []
+
+        GetTasksResponse (Err err) ->
+            { model
+                | httpError = Just err
+                , isBusy = False
+            }
+                ! []
+
+        GetTasksResponse (Ok tasks) ->
+            let
+                newDict =
+                    tasks
+                        |> List.map (\task -> ( task.id, task ))
+                        |> Dict.fromList
+            in
+                { model
+                    | tasks = newDict
+                    , httpError = Nothing
+                    , isBusy = False
+                }
+                    ! []
 
         ChangeInputText text ->
             { model | inputText = text } ! []
@@ -181,6 +205,7 @@ view model =
                             (Form.formInline
                                 [ Ev.onSubmit (SubmitNewTask model.inputText)
                                 , Space.m0
+                                , Attr.disabled model.isBusy
                                 ]
                                 [ Grid.row
                                     [ Row.attrs [ Size.w100 ] ]
