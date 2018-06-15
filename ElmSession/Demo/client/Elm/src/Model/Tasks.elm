@@ -6,10 +6,12 @@ module Model.Tasks
         , insert
         , get
         , getSortedTaskList
+        , decoder
         )
 
 import Dict exposing (Dict)
 import Model.Task exposing (TaskId, Task)
+import Json.Decode as Json exposing (Decoder)
 
 
 type alias Tasks =
@@ -65,3 +67,8 @@ sortList tasks =
                     compare task1.id task2.id
     in
         List.sortWith sorting tasks
+
+
+decoder : Decoder Tasks
+decoder =
+    Json.map fromList (Json.list Model.Task.decoder)

@@ -4,6 +4,7 @@ import Http exposing (Request)
 import Json.Decode as Json
 import Json.Encode as Enc
 import Model.Task exposing (TaskId, Task)
+import Model.Tasks as Tasks exposing (Tasks)
 
 
 type alias Url =
@@ -15,9 +16,9 @@ get baseUrl taskId =
     Http.get (baseUrl ++ "todos/" ++ toString taskId) (Json.maybe Model.Task.decoder)
 
 
-getAll : Url -> Request (List Task)
+getAll : Url -> Request Tasks
 getAll baseUrl =
-    Http.get (baseUrl ++ "todos") (Json.list Model.Task.decoder)
+    Http.get (baseUrl ++ "todos") Tasks.decoder
 
 
 update : Url -> Task -> Request Task
@@ -33,14 +34,14 @@ update baseUrl task =
         }
 
 
-delete : Url -> TaskId -> Request (List Task)
+delete : Url -> TaskId -> Request Tasks
 delete baseUrl taskId =
     Http.request
         { method = "delete"
         , headers = []
         , url = baseUrl ++ "todos/" ++ toString taskId
         , body = Http.emptyBody
-        , expect = Http.expectJson (Json.list Model.Task.decoder)
+        , expect = Http.expectJson Tasks.decoder
         , timeout = Nothing
         , withCredentials = False
         }

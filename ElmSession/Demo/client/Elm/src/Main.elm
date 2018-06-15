@@ -51,7 +51,7 @@ type alias Flags =
 
 type Msg
     = NoOp
-    | GetTasksResponse (Result Http.Error (List Task))
+    | GetTasksResponse (Result Http.Error Tasks)
     | ChangeInputText String
     | SubmitNewTask String
     | UpdateTaskResponse (Result Http.Error Task)
@@ -91,17 +91,13 @@ update msg model =
             }
                 ! []
 
-        GetTasksResponse (Ok tasks) ->
-            let
-                newTasks =
-                    Tasks.fromList tasks
-            in
-                { model
-                    | tasks = newTasks
-                    , httpError = Nothing
-                    , isBusy = False
-                }
-                    ! []
+        GetTasksResponse (Ok newTasks) ->
+            { model
+                | tasks = newTasks
+                , httpError = Nothing
+                , isBusy = False
+            }
+                ! []
 
         ChangeInputText text ->
             { model | inputText = text } ! []
