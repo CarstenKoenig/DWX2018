@@ -13,7 +13,6 @@ import Bootstrap.Grid.Row as Row
 import Bootstrap.ListGroup as List
 import Bootstrap.Utilities.Size as Size
 import Bootstrap.Utilities.Spacing as Space
-import Dict exposing (Dict)
 import Dom exposing (focus)
 import FontAwesome as FontA
 import Html as Html exposing (Html)
@@ -22,6 +21,7 @@ import Html.Events as Ev
 import Http
 import Keyboard
 import Model.Task exposing (TaskId, Task)
+import Model.Tasks as Tasks exposing (Tasks)
 import Task
 
 
@@ -39,41 +39,10 @@ type alias Model =
     { flags : Flags
     , isBusy : Bool
     , httpError : Maybe Http.Error
-    , tasks : Dict TaskId Task
+    , tasks : Tasks
     , inputText : String
     , editTask : Maybe ( TaskId, String )
     }
-
-
-sortTasks : List Task -> List Task
-sortTasks tasks =
-    let
-        sorting task1 task2 =
-            case ( task1.finished, task2.finished ) of
-                ( False, False ) ->
-                    compare task1.id task2.id
-
-                ( False, True ) ->
-                    LT
-
-                ( True, False ) ->
-                    GT
-
-                ( True, True ) ->
-                    compare task1.id task2.id
-    in
-        List.sortWith sorting tasks
-
-
-changeText : TaskId -> String -> Dict TaskId Task -> Dict TaskId Task
-changeText taskId text =
-    Dict.map
-        (\tid task ->
-            if tid == taskId then
-                { task | text = text }
-            else
-                task
-        )
 
 
 type alias Flags =
@@ -100,7 +69,7 @@ init flags =
     { flags = flags
     , httpError = Nothing
     , isBusy = True
-    , tasks = Dict.empty
+    , tasks = Tasks.empty
     , inputText = ""
     , editTask = Nothing
     }
@@ -125,9 +94,7 @@ update msg model =
         GetTasksResponse (Ok tasks) ->
             let
                 newTasks =
-                    tasks
-                        |> List.map (\task -> ( task.id, task ))
-                        |> Dict.fromList
+                    Tasks.fromList tasks
             in
                 { model
                     | tasks = newTasks
@@ -161,8 +128,7 @@ update msg model =
         UpdateTaskResponse (Ok task) ->
             let
                 newTasks =
-                    model.tasks
-                        |> Dict.insert task.id task
+                    Tasks.insert task model.tasks
             in
                 { model
                     | tasks = newTasks
@@ -176,7 +142,7 @@ update msg model =
         ToggleTask taskId finished ->
             let
                 changedTask =
-                    Dict.get taskId model.tasks
+                    Tasks.get taskId model
                         |> Maybe.map (\task -> { task | finished = finished })
             in
                 case changedTask of
@@ -208,7 +174,7 @@ update msg model =
         SubmitEditTask taskId text ->
             let
                 changedTask =
-                    Dict.get taskId model.tasks
+                    Tasks.get taskId model
                         |> Maybe.map (\task -> { task | text = text })
             in
                 case changedTask of
@@ -296,8 +262,7 @@ view model =
                             )
                         ]
                     |> Card.listGroup
-                        (Dict.values model.tasks
-                            |> sortTasks
+                        (Tasks.getSortedTaskList model
                             |> List.map (viewTask model)
                         )
                     |> Card.view
