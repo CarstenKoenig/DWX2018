@@ -1,20 +1,21 @@
 module Main exposing (..)
 
-import Html as Html exposing (Html)
-import Html.Events as Ev
-import Html.Attributes as Attr
+import Bootstrap.Button as Button
 import Bootstrap.Card as Card
 import Bootstrap.Card.Block as Block
 import Bootstrap.Form as Form
 import Bootstrap.Form.Input as Input
 import Bootstrap.Grid as Grid
-import Bootstrap.Grid.Row as Row
 import Bootstrap.Grid.Col as Col
-import Bootstrap.Button as Button
+import Bootstrap.Grid.Row as Row
+import Bootstrap.ListGroup as List
 import Bootstrap.Utilities.Size as Size
 import Bootstrap.Utilities.Spacing as Space
-import Bootstrap.ListGroup as List
 import Dict exposing (Dict)
+import Html as Html exposing (Html)
+import Html.Attributes as Attr
+import Html.Events as Ev
+import Model.Task exposing (TaskId, Task)
 
 
 main : Program Flags Model Msg
@@ -32,17 +33,6 @@ type alias Model =
     , inputText : String
     , activeTask : Maybe ( TaskId, Maybe String )
     , tasks : Dict TaskId Task
-    }
-
-
-type alias TaskId =
-    Int
-
-
-type alias Task =
-    { id : TaskId
-    , text : String
-    , finished : Bool
     }
 
 
@@ -189,7 +179,9 @@ view model =
                     |> Card.block []
                         [ Block.custom
                             (Form.formInline
-                                [ Ev.onSubmit (SubmitNewTask model.inputText) ]
+                                [ Ev.onSubmit (SubmitNewTask model.inputText)
+                                , Space.m0
+                                ]
                                 [ Grid.row
                                     [ Row.attrs [ Size.w100 ] ]
                                     [ Grid.col [ Col.xs ]

@@ -1,5 +1,5 @@
-output/todo.js: $(wildcard *.elm)
-	elm make --yes Main.elm --output ./output/todo.js
+output/todo.js: $(wildcard src/***/*.elm)
+	elm make --yes src/Main.elm --output ./output/todo.js
 
 .PHONY: deploy
 deploy: output/todo.js
