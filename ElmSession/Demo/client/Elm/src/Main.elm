@@ -20,6 +20,7 @@ import Html as Html exposing (Html)
 import Html.Attributes as Attr
 import Html.Events as Ev
 import Http
+import Keyboard
 import Model.Task exposing (TaskId, Task)
 import Task
 
@@ -91,6 +92,7 @@ type Msg
     | CancelEdit
     | DeleteTask TaskId
     | SubmitEditTask TaskId String
+    | KeyDown Keyboard.KeyCode
 
 
 init : Flags -> ( Model, Cmd Msg )
@@ -185,7 +187,8 @@ update msg model =
                             ! [ Http.send UpdateTaskResponse (Api.Task.update model.flags.baseUrl task) ]
 
         EditTask taskId text ->
-            { model | editTask = Just ( taskId, text ) } ! [ Task.attempt (always NoOp) (focus ("task_" ++ toString taskId)) ]
+            { model | editTask = Just ( taskId, text ) }
+                ! [ Task.attempt (always NoOp) (focus ("task_" ++ toString taskId)) ]
 
         ChangeEditText text ->
             let
@@ -223,10 +226,24 @@ update msg model =
             }
                 ! [ Http.send GetTasksResponse (Api.Task.delete model.flags.baseUrl taskId) ]
 
+        KeyDown code ->
+            case code of
+                -- ESC
+                27 ->
+                    { model
+                        | editTask = Nothing
+                        , inputText = ""
+                        , httpError = Nothing
+                    }
+                        ! [ Task.attempt (always NoOp) (focus "inputText") ]
+
+                _ ->
+                    model ! []
+
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
-    Sub.none
+    Keyboard.downs KeyDown
 
 
 view : Model -> Html Msg
@@ -252,7 +269,7 @@ view model =
                                         [ Input.text
                                             [ Input.onInput ChangeInputText
                                             , Input.placeholder "was ist zu tun?"
-                                            , Input.attrs [ Size.w100 ]
+                                            , Input.attrs [ Attr.id "inputText", Size.w100 ]
                                             , Input.value model.inputText
                                             ]
                                         ]
