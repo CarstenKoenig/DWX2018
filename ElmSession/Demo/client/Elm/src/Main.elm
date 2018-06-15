@@ -52,16 +52,24 @@ type alias Flags =
 type Msg
     = NoOp
     | GetTasksResponse (Result Http.Error Tasks)
-    | ChangeInputText String
-    | SubmitNewTask String
     | UpdateTaskResponse (Result Http.Error Task)
+    | NewTaskMsg NewTaskMsg
     | ToggleTask TaskId Bool
-    | EditTask TaskId String
+    | EditTaskMsg EditTaskMsg
+    | DeleteTask TaskId
+    | KeyDown Keyboard.KeyCode
+
+
+type NewTaskMsg
+    = ChangeNewText String
+    | SubmitNew String
+
+
+type EditTaskMsg
+    = Edit TaskId String
     | ChangeEditText String
     | CancelEdit
-    | DeleteTask TaskId
-    | SubmitEditTask TaskId String
-    | KeyDown Keyboard.KeyCode
+    | SubmitEdit TaskId String
 
 
 init : Flags -> ( Model, Cmd Msg )
@@ -99,19 +107,6 @@ update msg model =
             }
                 ! []
 
-        ChangeInputText text ->
-            { model | inputText = text } ! []
-
-        SubmitNewTask text ->
-            { model
-                | isBusy = True
-                , httpError = Nothing
-                , editTask = Nothing
-            }
-                ! [ Http.send UpdateTaskResponse (Api.Task.new model.flags.baseUrl text)
-                  , Task.attempt (always NoOp) (focus "inputText")
-                  ]
-
         UpdateTaskResponse (Err err) ->
             { model
                 | httpError = Just err
@@ -135,6 +130,9 @@ update msg model =
                 }
                     ! [ Task.attempt (always NoOp) (focus "inputText") ]
 
+        NewTaskMsg newMsg ->
+            updateNew newMsg model
+
         ToggleTask taskId finished ->
             let
                 changedTask =
@@ -152,40 +150,8 @@ update msg model =
                         }
                             ! [ Http.send UpdateTaskResponse (Api.Task.update model.flags.baseUrl task) ]
 
-        EditTask taskId text ->
-            { model | editTask = Just ( taskId, text ) }
-                ! [ Task.attempt (always NoOp) (focus ("task_" ++ toString taskId)) ]
-
-        ChangeEditText text ->
-            let
-                newEdit =
-                    model.editTask |> Maybe.map (\( taskId, _ ) -> ( taskId, text ))
-            in
-                { model | editTask = newEdit } ! []
-
-        CancelEdit ->
-            { model | editTask = Nothing }
-                ! [ Task.attempt (always NoOp) (focus "inputText") ]
-
-        SubmitEditTask taskId text ->
-            let
-                changedTask =
-                    Tasks.get taskId model
-                        |> Maybe.map (\task -> { task | text = text })
-            in
-                case changedTask of
-                    Nothing ->
-                        model ! []
-
-                    Just task ->
-                        { model
-                            | isBusy = True
-                            , httpError = Nothing
-                            , editTask = Nothing
-                        }
-                            ! [ Http.send UpdateTaskResponse (Api.Task.update model.flags.baseUrl task)
-                              , Task.attempt (always NoOp) (focus "inputText")
-                              ]
+        EditTaskMsg editMsg ->
+            updateEdit editMsg model
 
         DeleteTask taskId ->
             { model
@@ -212,6 +178,62 @@ update msg model =
                     model ! []
 
 
+updateNew : NewTaskMsg -> Model -> ( Model, Cmd Msg )
+updateNew msg model =
+    case msg of
+        ChangeNewText text ->
+            { model | inputText = text } ! []
+
+        SubmitNew text ->
+            { model
+                | isBusy = True
+                , httpError = Nothing
+                , editTask = Nothing
+            }
+                ! [ Http.send UpdateTaskResponse (Api.Task.new model.flags.baseUrl text)
+                  , Task.attempt (always NoOp) (focus "inputText")
+                  ]
+
+
+updateEdit : EditTaskMsg -> Model -> ( Model, Cmd Msg )
+updateEdit msg model =
+    case msg of
+        Edit taskId text ->
+            { model | editTask = Just ( taskId, text ) }
+                ! [ Task.attempt (always NoOp) (focus ("task_" ++ toString taskId)) ]
+
+        ChangeEditText text ->
+            let
+                newEdit =
+                    model.editTask |> Maybe.map (\( taskId, _ ) -> ( taskId, text ))
+            in
+                { model | editTask = newEdit } ! []
+
+        CancelEdit ->
+            { model | editTask = Nothing }
+                ! [ Task.attempt (always NoOp) (focus "inputText") ]
+
+        SubmitEdit taskId text ->
+            let
+                changedTask =
+                    Tasks.get taskId model
+                        |> Maybe.map (\task -> { task | text = text })
+            in
+                case changedTask of
+                    Nothing ->
+                        model ! []
+
+                    Just task ->
+                        { model
+                            | isBusy = True
+                            , httpError = Nothing
+                            , editTask = Nothing
+                        }
+                            ! [ Http.send UpdateTaskResponse (Api.Task.update model.flags.baseUrl task)
+                              , Task.attempt (always NoOp) (focus "inputText")
+                              ]
+
+
 subscriptions : Model -> Sub Msg
 subscriptions model =
     Keyboard.downs KeyDown
@@ -219,49 +241,46 @@ subscriptions model =
 
 view : Model -> Html Msg
 view model =
-    Grid.container
-        []
+    Grid.container []
         [ Grid.row
             [ Row.centerMd ]
             [ Grid.col
                 [ Col.md12, Col.middleMd ]
                 [ Card.config [ Card.outlineDark ]
                     |> Card.headerH1 [] [ Html.text "TODO:" ]
-                    |> Card.block []
-                        [ Block.custom
-                            (Form.formInline
-                                [ Ev.onSubmit (SubmitNewTask model.inputText)
-                                , Space.m0
-                                , Attr.disabled (model.isBusy || model.editTask /= Nothing)
-                                ]
-                                [ Grid.row
-                                    [ Row.attrs [ Size.w100 ] ]
-                                    [ Grid.col [ Col.xs ]
-                                        [ Input.text
-                                            [ Input.onInput ChangeInputText
-                                            , Input.placeholder "was ist zu tun?"
-                                            , Input.attrs [ Attr.id "inputText", Size.w100 ]
-                                            , Input.value model.inputText
-                                            ]
-                                        ]
-                                    , Grid.col [ Col.xsAuto ]
-                                        [ Button.button
-                                            [ Button.primary
-                                            , Button.disabled (String.length model.inputText < 5)
-                                            , Button.attrs [ Attr.type_ "submit" ]
-                                            ]
-                                            [ Html.text "ok"
-                                            ]
-                                        ]
-                                    ]
-                                ]
-                            )
-                        ]
-                    |> Card.listGroup
-                        (Tasks.getSortedTaskList model
-                            |> List.map (viewTask model)
-                        )
+                    |> Card.block [] [ Block.custom (viewNewTaskForm model) ]
+                    |> Card.listGroup (List.map (viewTask model) (Tasks.getSortedTaskList model))
                     |> Card.view
+                ]
+            ]
+        ]
+
+
+viewNewTaskForm : Model -> Html Msg
+viewNewTaskForm model =
+    Form.formInline
+        [ Ev.onSubmit (NewTaskMsg (SubmitNew model.inputText))
+        , Space.m0
+        , Attr.disabled (model.isBusy || model.editTask /= Nothing)
+        ]
+        [ Grid.row
+            [ Row.attrs [ Size.w100 ] ]
+            [ Grid.col [ Col.xs ]
+                [ Input.text
+                    [ Input.onInput (NewTaskMsg << ChangeNewText)
+                    , Input.placeholder "was ist zu tun?"
+                    , Input.attrs [ Attr.id "inputText", Size.w100 ]
+                    , Input.value model.inputText
+                    ]
+                ]
+            , Grid.col [ Col.xsAuto ]
+                [ Button.button
+                    [ Button.primary
+                    , Button.disabled (String.length model.inputText < 5)
+                    , Button.attrs [ Attr.type_ "submit" ]
+                    ]
+                    [ Html.text "ok"
+                    ]
                 ]
             ]
         ]
@@ -313,15 +332,15 @@ viewTask model task =
         content =
             if isEdit then
                 Form.formInline
-                    [ Ev.onSubmit (SubmitEditTask task.id editText)
+                    [ Ev.onSubmit (EditTaskMsg (SubmitEdit task.id task.text))
                     , Space.m0
                     , Attr.disabled model.isBusy
                     ]
                     [ Input.text
-                        [ Input.onInput ChangeEditText
+                        [ Input.onInput (EditTaskMsg << ChangeEditText)
                         , Input.attrs
                             [ Size.w100
-                            , Ev.onBlur CancelEdit
+                            , Ev.onBlur (EditTaskMsg CancelEdit)
                             , Attr.id ("task_" ++ toString task.id)
                             ]
                         , Input.value editText
@@ -336,28 +355,29 @@ viewTask model task =
             optColor
             [ Grid.row
                 []
-                [ Grid.col
-                    [ Col.xs ]
-                    [ content ]
-                , Grid.col
-                    [ Col.xsAuto ]
+                [ Grid.col [ Col.xs ] [ content ]
+                , Grid.col [ Col.xsAuto ]
                     (if isEdit then
                         []
                      else
-                        [ BGroup.buttonGroup
-                            [ BGroup.small ]
-                            [ BGroup.button
-                                [ Button.outlineWarning
-                                , Button.onClick (EditTask task.id task.text)
-                                ]
-                                [ FontA.icon FontA.edit ]
-                            , BGroup.button
-                                [ Button.outlineDanger
-                                , Button.onClick (DeleteTask task.id)
-                                ]
-                                [ FontA.icon FontA.trash ]
-                            ]
-                        ]
+                        [ viewTaskButtons task ]
                     )
                 ]
             ]
+
+
+viewTaskButtons : Task -> Html Msg
+viewTaskButtons task =
+    BGroup.buttonGroup
+        [ BGroup.small ]
+        [ BGroup.button
+            [ Button.outlineWarning
+            , Button.onClick (EditTaskMsg (Edit task.id task.text))
+            ]
+            [ FontA.icon FontA.edit ]
+        , BGroup.button
+            [ Button.outlineDanger
+            , Button.onClick (DeleteTask task.id)
+            ]
+            [ FontA.icon FontA.trash ]
+        ]
