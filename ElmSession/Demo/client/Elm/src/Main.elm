@@ -104,7 +104,9 @@ init flags =
     , inputText = ""
     , editTask = Nothing
     }
-        ! [ Http.send GetTasksResponse (Api.Task.getAll flags.baseUrl) ]
+        ! [ Http.send GetTasksResponse (Api.Task.getAll flags.baseUrl)
+          , Task.attempt (always NoOp) (focus "inputText")
+          ]
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -154,7 +156,7 @@ update msg model =
                 , editTask = Nothing
                 , inputText = ""
             }
-                ! []
+                ! [ Task.attempt (always NoOp) (focus "inputText") ]
 
         UpdateTaskResponse (Ok task) ->
             let
@@ -169,7 +171,7 @@ update msg model =
                     , inputText = ""
                     , editTask = Nothing
                 }
-                    ! []
+                    ! [ Task.attempt (always NoOp) (focus "inputText") ]
 
         ToggleTask taskId finished ->
             let
