@@ -143,7 +143,9 @@ update msg model =
                 , httpError = Nothing
                 , editTask = Nothing
             }
-                ! [ Http.send UpdateTaskResponse (Api.Task.new model.flags.baseUrl text) ]
+                ! [ Http.send UpdateTaskResponse (Api.Task.new model.flags.baseUrl text)
+                  , Task.attempt (always NoOp) (focus "inputText")
+                  ]
 
         UpdateTaskResponse (Err err) ->
             { model
@@ -198,7 +200,8 @@ update msg model =
                 { model | editTask = newEdit } ! []
 
         CancelEdit ->
-            { model | editTask = Nothing } ! []
+            { model | editTask = Nothing }
+                ! [ Task.attempt (always NoOp) (focus "inputText") ]
 
         SubmitEditTask taskId text ->
             let
@@ -216,7 +219,9 @@ update msg model =
                             , httpError = Nothing
                             , editTask = Nothing
                         }
-                            ! [ Http.send UpdateTaskResponse (Api.Task.update model.flags.baseUrl task) ]
+                            ! [ Http.send UpdateTaskResponse (Api.Task.update model.flags.baseUrl task)
+                              , Task.attempt (always NoOp) (focus "inputText")
+                              ]
 
         DeleteTask taskId ->
             { model
@@ -224,7 +229,9 @@ update msg model =
                 , isBusy = True
                 , httpError = Nothing
             }
-                ! [ Http.send GetTasksResponse (Api.Task.delete model.flags.baseUrl taskId) ]
+                ! [ Http.send GetTasksResponse (Api.Task.delete model.flags.baseUrl taskId)
+                  , Task.attempt (always NoOp) (focus "inputText")
+                  ]
 
         KeyDown code ->
             case code of
