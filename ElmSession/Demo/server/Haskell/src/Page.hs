@@ -35,7 +35,7 @@ scripts = do
 
   where
     jsSrcs =
-      [ "static/lib/jquery/jquery.js"
-      , "static/lib/popper/dist/js/popper.min.js"
+      [ "static/lib/jquery/dist/jquery.js"
+      , "static/lib/popper/dist/popper.js"
       , "static/todo.js"
       ]
