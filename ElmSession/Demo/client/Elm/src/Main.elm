@@ -32,11 +32,11 @@ main =
 
 type alias Model =
     { flags : Flags
-    , inputText : String
-    , activeTask : Maybe ( TaskId, Maybe String )
-    , tasks : Dict TaskId Task
-    , httpError : Maybe Http.Error
     , isBusy : Bool
+    , httpError : Maybe Http.Error
+    , tasks : Dict TaskId Task
+    , inputText : String
+    , activeTask : Maybe ( TaskId, String )
     }
 
 
@@ -84,12 +84,9 @@ type Msg
     = NoOp
     | GetTasksResponse (Result Http.Error (List Task))
     | ChangeInputText String
-    | MouseOver TaskId
-    | MouseOut TaskId
     | SubmitNewTask String
-    | NewTaskResponse (Result Http.Error Task)
-    | ChangeTaskText String
-    | SubmitTaskTextChange TaskId String
+    | UpdateTaskResponse (Result Http.Error Task)
+    | ToggleTask TaskId Bool
 
 
 init : Flags -> ( Model, Cmd Msg )
@@ -139,16 +136,16 @@ update msg model =
                 | isBusy = True
                 , httpError = Nothing
             }
-                ! [ Http.send NewTaskResponse (Api.Task.postNew model.flags.baseUrl text) ]
+                ! [ Http.send UpdateTaskResponse (Api.Task.postNew model.flags.baseUrl text) ]
 
-        NewTaskResponse (Err err) ->
+        UpdateTaskResponse (Err err) ->
             { model
                 | httpError = Just err
                 , isBusy = False
             }
                 ! []
 
-        NewTaskResponse (Ok task) ->
+        UpdateTaskResponse (Ok task) ->
             let
                 newTasks =
                     model.tasks
@@ -161,42 +158,22 @@ update msg model =
                 }
                     ! []
 
-        MouseOver tId ->
-            case model.activeTask of
-                Just ( _, Just _ ) ->
-                    model ! []
-
-                _ ->
-                    { model | activeTask = Just ( tId, Nothing ) } ! []
-
-        MouseOut tId ->
-            case model.activeTask of
-                Just ( activeId, Nothing ) ->
-                    if activeId == tId then
-                        { model | activeTask = Nothing } ! []
-                    else
+        ToggleTask taskId finished ->
+            let
+                changedTask =
+                    Dict.get taskId model.tasks
+                        |> Maybe.map (\task -> { task | finished = finished })
+            in
+                case changedTask of
+                    Nothing ->
                         model ! []
 
-                _ ->
-                    model ! []
-
-        ChangeTaskText text ->
-            case model.activeTask of
-                Just ( tId, _ ) ->
-                    { model | activeTask = Just ( tId, Just text ) } ! []
-
-                Nothing ->
-                    model ! []
-
-        SubmitTaskTextChange taskId text ->
-            let
-                neueTasks =
-                    changeText taskId text model.tasks
-
-                neuActive =
-                    Just ( taskId, Nothing )
-            in
-                { model | tasks = neueTasks, activeTask = neuActive } ! []
+                    Just task ->
+                        { model
+                            | isBusy = True
+                            , httpError = Nothing
+                        }
+                            ! [ Http.send UpdateTaskResponse (Api.Task.postUpdate model.flags.baseUrl task) ]
 
 
 subscriptions : Model -> Sub Msg
@@ -264,7 +241,10 @@ viewTask model task =
                     ( activeId == task.id, activeText )
 
                 Nothing ->
-                    ( False, Nothing )
+                    ( False, "" )
+
+        isDisabled =
+            model.isBusy
 
         textStyle =
             if task.finished then
@@ -272,47 +252,41 @@ viewTask model task =
             else
                 Attr.style []
 
-        optColor =
-            if task.finished then
-                [ List.light ]
-            else
-                [ List.warning ]
-
-        optActive =
-            if isActive then
-                [ List.active ]
+        optDisabled =
+            if isDisabled then
+                [ List.disabled ]
             else
                 []
 
+        optColor =
+            if isDisabled then
+                [ List.disabled ]
+            else if task.finished then
+                [ List.success ]
+            else
+                [ List.warning ]
+
+        optStyles =
+            [ List.attrs [ Attr.style [ ( "cursor", "pointer" ) ] ] ]
+
         events =
-            [ List.attrs
-                [ Ev.onMouseOver (MouseOver task.id)
-                , Ev.onMouseOut (MouseOut task.id)
-                ]
-            ]
+            let
+                click =
+                    if isDisabled then
+                        []
+                    else
+                        [ Ev.onClick (ToggleTask task.id (not task.finished)) ]
+            in
+                [ List.attrs click ]
 
         content =
-            if isActive then
-                let
-                    text =
-                        activeText |> Maybe.withDefault task.text
-                in
-                    Form.formInline
-                        [ Ev.onSubmit (SubmitTaskTextChange task.id text) ]
-                        [ Input.text
-                            [ Input.onInput ChangeTaskText
-                            , Input.attrs [ Size.w75 ]
-                            , Input.value text
-                            ]
-                        ]
-            else
-                Html.strong
-                    [ textStyle ]
-                    [ Html.text task.text
-                    ]
+            Html.strong
+                [ textStyle ]
+                [ Html.text task.text
+                ]
     in
         List.li
-            (optActive ++ optColor ++ events)
+            (optStyles ++ optColor ++ events)
             [ Grid.row
                 []
                 [ Grid.col
