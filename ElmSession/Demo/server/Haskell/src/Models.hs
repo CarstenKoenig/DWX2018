@@ -1,23 +1,18 @@
 {-# LANGUAGE TemplateHaskell #-}
 module Models
-  ( User
-  , users
+  ( TaskId
+  , Task (..)
   ) where
 
 import Data.Aeson.TH (deriveJSON, defaultOptions)
+import Data.Int (Int64)
+import Data.Text (Text)
 
+type TaskId = Int64
 
-data User = User
-  { userId        :: Int
-  , userFirstName :: String
-  , userLastName  :: String
-  } deriving (Eq, Show)
+data Task = Task { id       :: TaskId
+                 , text     :: Text
+                 , finished :: Bool
+                 } deriving Show
 
-$(deriveJSON defaultOptions ''User)
-
-
-users :: [User]
-users = 
-  [ User 1 "Isaac" "Newton"
-  , User 2 "Albert" "Einstein"
-  ]
+$(deriveJSON defaultOptions ''Task)

@@ -20,16 +20,7 @@ import           Data.Maybe (listToMaybe)
 import           Data.Text (Text)
 import           Database.SQLite.Simple (NamedParam(..))
 import qualified Database.SQLite.Simple as Sql
-
-
-type TaskId = Int64
-
-data Task = Task { id       :: TaskId
-                 , text     :: Text
-                 , finished :: Bool
-                 } deriving Show
-
-$(deriveJSON defaultOptions ''Task)
+import           Models
 
 
 initDb :: MonadIO m => FilePath -> m ()
