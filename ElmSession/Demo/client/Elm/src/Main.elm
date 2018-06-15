@@ -341,7 +341,7 @@ viewTask model task =
             else if task.finished then
                 [ List.success ]
             else
-                [ List.warning ]
+                [ List.light ]
 
         taskEvents =
             if isDisabled || isEdit then
