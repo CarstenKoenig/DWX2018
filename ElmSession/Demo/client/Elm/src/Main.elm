@@ -13,6 +13,7 @@ import Bootstrap.Grid.Row as Row
 import Bootstrap.ListGroup as List
 import Bootstrap.Utilities.Size as Size
 import Bootstrap.Utilities.Spacing as Space
+import Bootstrap.Text as Text
 import Dom exposing (focus)
 import FontAwesome as FontA
 import Html as Html exposing (Html)
@@ -241,12 +242,12 @@ subscriptions model =
 
 view : Model -> Html Msg
 view model =
-    Grid.container []
+    Grid.container [ Attr.class "container h-100" ]
         [ Grid.row
-            [ Row.centerMd ]
+            [ Row.attrs [ Attr.class "h-100 justify-content-center align-items-center" ] ]
             [ Grid.col
                 [ Col.md12, Col.middleMd ]
-                [ Card.config [ Card.outlineDark ]
+                [ Card.config [ Card.outlineLight ]
                     |> Card.headerH1 [] [ Html.text "TODO:" ]
                     |> Card.block [] [ Block.custom (viewNewTaskForm model |> Html.map NewTaskMsg) ]
                     |> Card.listGroup (List.map (viewTask model) (Tasks.getSortedTaskList model))
@@ -262,6 +263,7 @@ viewNewTaskForm model =
         [ Ev.onSubmit (SubmitNew model.inputText)
         , Space.m0
         , Attr.disabled (model.isBusy || model.editTask /= Nothing)
+        , Attr.autocomplete False
         ]
         [ Grid.row
             [ Row.attrs [ Size.w100 ] ]
@@ -302,12 +304,12 @@ viewTask model task =
 
         textStyle =
             if task.finished then
-                Attr.style
-                    [ ( "text-decoration", "line-through" )
-                    , ( "cursor", "pointer" )
-                    ]
+                Attr.style [ ( "text-decoration", "line-through" ) ]
             else
-                Attr.style [ ( "cursor", "pointer" ) ]
+                Attr.style []
+
+        cursorPointer =
+            Attr.style [ ( "cursor", "pointer" ) ]
 
         optColor =
             if isDisabled then
@@ -341,15 +343,27 @@ viewTask model task =
                         ]
                     ]
             else
-                Html.strong
-                    (textStyle :: taskEvents)
-                    [ Html.text task.text ]
+                Html.strong [ textStyle ] [ Html.text task.text ]
+
+        checkBox =
+            Html.div (cursorPointer :: taskEvents)
+                [ if task.finished then
+                    FontA.iconWithOptions FontA.checkCircle FontA.Regular [] []
+                  else
+                    FontA.iconWithOptions FontA.circle FontA.Regular [] []
+                ]
     in
         List.li
             optColor
             [ Grid.row
-                []
-                [ Grid.col [ Col.xs ] [ content ]
+                [ Row.attrs [ Attr.class "justify-content-center align-items-center" ] ]
+                [ Grid.col [ Col.xsAuto ]
+                    (if isEdit then
+                        []
+                     else
+                        [ checkBox ]
+                    )
+                , Grid.col [ Col.xs ] [ content ]
                 , Grid.col [ Col.xsAuto ]
                     (if isEdit then
                         []
@@ -366,12 +380,12 @@ viewTaskButtons task =
     BGroup.buttonGroup
         [ BGroup.small ]
         [ BGroup.button
-            [ Button.outlineWarning
-            , Button.onClick (Edit task.id task.text)
+            [ Button.onClick (Edit task.id task.text)
+            , Button.outlineLight
             ]
             [ FontA.icon FontA.edit ]
         , BGroup.button
-            [ Button.outlineDanger
+            [ Button.outlineLight
             , Button.onClick (DeleteTask task.id)
             ]
             [ FontA.icon FontA.trash ]
