@@ -2,15 +2,27 @@
 author: Carsten König
 title: Einstieg in Elm
 date: 26. Juni 2018
+github: https://github.com/CarstenKoenig/DWX2018 
 ---
 
-# Einstieg in Elm
+## Einstieg in Elm
 
-<br />
-Carsten König - [@carstenk_dev](http://www.twitter.com/carstenk_dev)
-<br />
-<br />
-Code / Slides unter [github.com/CarstenKoenig/DWX2017](https://github.com/CarstenKoenig/DWX2017)
+
+Code / Slides: [github.com/CarstenKoenig/DWX2018](https://github.com/CarstenKoenig/DWX2018)
+
+:::notes
+Ablauf:
+
+- was ist Elm
+- Demo: Todo / Einstieg Html
+- TEA 1
+- Demo: `beginnerProgram`
+- TEA 2 / Decoder
+- Demo: Model, Decoder, Http
+- optional: ganzes Projekt vorstellen
+- weitere Hinweise
+- FAQ
+:::
 
 ***
 
@@ -20,6 +32,10 @@ Code / Slides unter [github.com/CarstenKoenig/DWX2017](https://github.com/Carste
 - wird in JavaScript übersetzt
 - **rein** funktionale Sprache
 - ML Syntaxfamilie (Ocaml, F#, Haskell, ...)
+
+:::notes
+Help
+:::
 
 ***
 
@@ -37,7 +53,7 @@ Code / Slides unter [github.com/CarstenKoenig/DWX2017](https://github.com/Carste
 
 ### Editor
 
-- Online: 
+- Online:
   - TryElm [http://elm-lang.org/try](http://elm-lang.org/try)
   - Ellie [https://ellie-app.com/new](https://ellie-app.com/new)
 - Editor-Support
