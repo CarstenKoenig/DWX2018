@@ -54,9 +54,7 @@ type Msg
     | GetTasksResponse (Result Http.Error Tasks)
     | UpdateTaskResponse (Result Http.Error Task)
     | NewTaskMsg NewTaskMsg
-    | ToggleTask TaskId Bool
-    | EditTaskMsg EditTaskMsg
-    | DeleteTask TaskId
+    | TaskItemMsg TaskItemMsg
     | KeyDown Keyboard.KeyCode
 
 
@@ -65,11 +63,13 @@ type NewTaskMsg
     | SubmitNew String
 
 
-type EditTaskMsg
-    = Edit TaskId String
+type TaskItemMsg
+    = ToggleTask TaskId Bool
+    | Edit TaskId String
     | ChangeEditText String
     | CancelEdit
     | SubmitEdit TaskId String
+    | DeleteTask TaskId
 
 
 init : Flags -> ( Model, Cmd Msg )
@@ -133,35 +133,8 @@ update msg model =
         NewTaskMsg newMsg ->
             updateNew newMsg model
 
-        ToggleTask taskId finished ->
-            let
-                changedTask =
-                    Tasks.get taskId model
-                        |> Maybe.map (\task -> { task | finished = finished })
-            in
-                case changedTask of
-                    Nothing ->
-                        model ! []
-
-                    Just task ->
-                        { model
-                            | isBusy = True
-                            , httpError = Nothing
-                        }
-                            ! [ Http.send UpdateTaskResponse (Api.Task.update model.flags.baseUrl task) ]
-
-        EditTaskMsg editMsg ->
-            updateEdit editMsg model
-
-        DeleteTask taskId ->
-            { model
-                | editTask = Nothing
-                , isBusy = True
-                , httpError = Nothing
-            }
-                ! [ Http.send GetTasksResponse (Api.Task.delete model.flags.baseUrl taskId)
-                  , Task.attempt (always NoOp) (focus "inputText")
-                  ]
+        TaskItemMsg itemMsg ->
+            updateItem itemMsg model
 
         KeyDown code ->
             case code of
@@ -195,8 +168,8 @@ updateNew msg model =
                   ]
 
 
-updateEdit : EditTaskMsg -> Model -> ( Model, Cmd Msg )
-updateEdit msg model =
+updateItem : TaskItemMsg -> Model -> ( Model, Cmd Msg )
+updateItem msg model =
     case msg of
         Edit taskId text ->
             { model | editTask = Just ( taskId, text ) }
@@ -233,6 +206,33 @@ updateEdit msg model =
                               , Task.attempt (always NoOp) (focus "inputText")
                               ]
 
+        ToggleTask taskId finished ->
+            let
+                changedTask =
+                    Tasks.get taskId model
+                        |> Maybe.map (\task -> { task | finished = finished })
+            in
+                case changedTask of
+                    Nothing ->
+                        model ! []
+
+                    Just task ->
+                        { model
+                            | isBusy = True
+                            , httpError = Nothing
+                        }
+                            ! [ Http.send UpdateTaskResponse (Api.Task.update model.flags.baseUrl task) ]
+
+        DeleteTask taskId ->
+            { model
+                | editTask = Nothing
+                , isBusy = True
+                , httpError = Nothing
+            }
+                ! [ Http.send GetTasksResponse (Api.Task.delete model.flags.baseUrl taskId)
+                  , Task.attempt (always NoOp) (focus "inputText")
+                  ]
+
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
@@ -248,7 +248,7 @@ view model =
                 [ Col.md12, Col.middleMd ]
                 [ Card.config [ Card.outlineDark ]
                     |> Card.headerH1 [] [ Html.text "TODO:" ]
-                    |> Card.block [] [ Block.custom (viewNewTaskForm model) ]
+                    |> Card.block [] [ Block.custom (viewNewTaskForm model |> Html.map NewTaskMsg) ]
                     |> Card.listGroup (List.map (viewTask model) (Tasks.getSortedTaskList model))
                     |> Card.view
                 ]
@@ -256,10 +256,10 @@ view model =
         ]
 
 
-viewNewTaskForm : Model -> Html Msg
+viewNewTaskForm : Model -> Html NewTaskMsg
 viewNewTaskForm model =
     Form.formInline
-        [ Ev.onSubmit (NewTaskMsg (SubmitNew model.inputText))
+        [ Ev.onSubmit (SubmitNew model.inputText)
         , Space.m0
         , Attr.disabled (model.isBusy || model.editTask /= Nothing)
         ]
@@ -267,7 +267,7 @@ viewNewTaskForm model =
             [ Row.attrs [ Size.w100 ] ]
             [ Grid.col [ Col.xs ]
                 [ Input.text
-                    [ Input.onInput (NewTaskMsg << ChangeNewText)
+                    [ Input.onInput ChangeNewText
                     , Input.placeholder "was ist zu tun?"
                     , Input.attrs [ Attr.id "inputText", Size.w100 ]
                     , Input.value model.inputText
@@ -326,15 +326,15 @@ viewTask model task =
         content =
             if isEdit then
                 Form.formInline
-                    [ Ev.onSubmit (EditTaskMsg (SubmitEdit task.id editText))
+                    [ Ev.onSubmit (SubmitEdit task.id editText)
                     , Space.m0
                     , Attr.disabled model.isBusy
                     ]
                     [ Input.text
-                        [ Input.onInput (EditTaskMsg << ChangeEditText)
+                        [ Input.onInput ChangeEditText
                         , Input.attrs
                             [ Size.w100
-                            , Ev.onBlur (EditTaskMsg CancelEdit)
+                            , Ev.onBlur CancelEdit
                             , Attr.id ("task_" ++ toString task.id)
                             ]
                         , Input.value editText
@@ -357,16 +357,17 @@ viewTask model task =
                         [ viewTaskButtons task ]
                     )
                 ]
+                |> Html.map TaskItemMsg
             ]
 
 
-viewTaskButtons : Task -> Html Msg
+viewTaskButtons : Task -> Html TaskItemMsg
 viewTaskButtons task =
     BGroup.buttonGroup
         [ BGroup.small ]
         [ BGroup.button
             [ Button.outlineWarning
-            , Button.onClick (EditTaskMsg (Edit task.id task.text))
+            , Button.onClick (Edit task.id task.text)
             ]
             [ FontA.icon FontA.edit ]
         , BGroup.button
