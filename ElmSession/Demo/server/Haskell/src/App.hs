@@ -12,6 +12,7 @@ module App
 
 import qualified Db
 import           Network.Wai (Application)
+import           Network.Wai.Middleware.Cors
 import           Network.Wai.Handler.Warp (run)
 import           Servant
 import qualified RestApi
@@ -40,6 +41,12 @@ startApp = do
 
 
 app :: Db.Handle -> Application
-app handle = 
+app handle =
+  myCors $
   Servant.serve (Proxy :: Proxy (RestApi :<|> RouteApi)) $
     RestApi.server handle :<|> RouteApi.server
+  where
+    myCors = cors $ const $ Just myPolicy
+    myPolicy = simpleCorsResourcePolicy { corsMethods = myMethods
+                                        , corsRequestHeaders = ["Content-Type"] }
+    myMethods = simpleMethods ++ ["PUT", "DELETE", "OPTIONS"]
