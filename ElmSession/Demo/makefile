@@ -2,6 +2,15 @@
 haskell: elm
 	$(MAKE) -C server/Haskell run
 
+.PHONY: fsharp
+fsharp: elm
+	$(MAKE) -C server/Fsharp run
+
+.PHONY: csharp
+csharp: elm
+	$(MAKE) -C server/Csharp run
+
+
 elm:
 	$(MAKE) -C client/Elm deploy
 	
