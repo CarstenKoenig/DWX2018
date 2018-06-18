@@ -13,7 +13,6 @@ import Bootstrap.Grid.Row as Row
 import Bootstrap.ListGroup as List
 import Bootstrap.Utilities.Size as Size
 import Bootstrap.Utilities.Spacing as Space
-import Bootstrap.Text as Text
 import Dom exposing (focus)
 import FontAwesome as FontA
 import Html as Html exposing (Html)
@@ -248,7 +247,7 @@ view model =
             [ Grid.col
                 [ Col.md12, Col.middleMd ]
                 [ Card.config [ Card.outlineLight ]
-                    |> Card.headerH1 [] [ Html.text "TODO:" ]
+                    |> Card.headerH1 [] [ Html.text "Elm-Todo-Liste" ]
                     |> Card.block [] [ Block.custom (viewNewTaskForm model |> Html.map NewTaskMsg) ]
                     |> Card.listGroup (List.map (viewTask model) (Tasks.getSortedTaskList model))
                     |> Card.view
