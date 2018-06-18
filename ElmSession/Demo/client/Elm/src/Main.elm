@@ -309,19 +309,13 @@ viewTask model task =
             else
                 Attr.style [ ( "cursor", "pointer" ) ]
 
-        optDisabled =
-            if isDisabled then
-                [ List.disabled ]
-            else
-                []
-
         optColor =
             if isDisabled then
                 [ List.disabled ]
             else if task.finished then
-                [ List.success ]
-            else
                 [ List.light ]
+            else
+                []
 
         taskEvents =
             if isDisabled || isEdit then
@@ -332,7 +326,7 @@ viewTask model task =
         content =
             if isEdit then
                 Form.formInline
-                    [ Ev.onSubmit (EditTaskMsg (SubmitEdit task.id task.text))
+                    [ Ev.onSubmit (EditTaskMsg (SubmitEdit task.id editText))
                     , Space.m0
                     , Attr.disabled model.isBusy
                     ]
