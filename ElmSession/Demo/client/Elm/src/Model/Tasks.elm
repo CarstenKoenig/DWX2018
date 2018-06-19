@@ -1,6 +1,7 @@
 module Model.Tasks
     exposing
         ( Tasks
+        , Filter(..)
         , empty
         , fromList
         , insert
@@ -20,6 +21,12 @@ type alias Tasks =
 
 type alias TasksRecord rest =
     { rest | tasks : Tasks }
+
+
+type Filter
+    = All
+    | Pending
+    | Completed
 
 
 empty : Tasks
@@ -42,11 +49,24 @@ get taskId model =
     Dict.get taskId model.tasks
 
 
-getSortedTaskList : TasksRecord rest -> List Task
-getSortedTaskList model =
-    model.tasks
-        |> Dict.values
-        |> sortList
+getSortedTaskList : Filter -> TasksRecord rest -> List Task
+getSortedTaskList filter model =
+    let
+        applyFilter task =
+            case filter of
+                All ->
+                    True
+
+                Pending ->
+                    not task.finished
+
+                Completed ->
+                    task.finished
+    in
+        model.tasks
+            |> Dict.values
+            |> List.filter applyFilter
+            |> sortList
 
 
 sortList : List Task -> List Task

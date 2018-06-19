@@ -22,12 +22,16 @@ import Http
 import Keyboard
 import Model.Task exposing (TaskId, Task)
 import Model.Tasks as Tasks exposing (Tasks)
+import Navigation as Nav
+import Routes
 import Task
+import Debug
 
 
 main : Program Flags Model Msg
 main =
-    Html.programWithFlags
+    Nav.programWithFlags
+        LocationChanged
         { init = init
         , view = view
         , update = update
@@ -37,6 +41,7 @@ main =
 
 type alias Model =
     { flags : Flags
+    , route : Routes.Route
     , isBusy : Bool
     , httpError : Maybe Http.Error
     , tasks : Tasks
@@ -51,6 +56,7 @@ type alias Flags =
 
 type Msg
     = NoOp
+    | LocationChanged Nav.Location
     | GetTasksResponse (Result Http.Error Tasks)
     | UpdateTaskResponse (Result Http.Error Task)
     | NewTaskMsg NewTaskMsg
@@ -72,18 +78,29 @@ type TaskItemMsg
     | DeleteTask TaskId
 
 
-init : Flags -> ( Model, Cmd Msg )
-init flags =
-    { flags = flags
-    , httpError = Nothing
-    , isBusy = True
-    , tasks = Tasks.empty
-    , inputText = ""
-    , editTask = Nothing
-    }
-        ! [ Http.send GetTasksResponse (Api.Task.getAll flags.baseUrl)
-          , Task.attempt (always NoOp) (focus "inputText")
-          ]
+init : Flags -> Nav.Location -> ( Model, Cmd Msg )
+init flags loc =
+    let
+        ( currentRoute, updateUrlCmd ) =
+            case Routes.locationToRoute loc of
+                Just route ->
+                    ( route, Cmd.none )
+
+                Nothing ->
+                    ( Routes.ShowAll, Nav.modifyUrl (Debug.log "goto: " <| Routes.routeToUrl Routes.ShowAll) )
+    in
+        { flags = flags
+        , route = currentRoute
+        , httpError = Nothing
+        , isBusy = True
+        , tasks = Tasks.empty
+        , inputText = ""
+        , editTask = Nothing
+        }
+            ! [ Http.send GetTasksResponse (Api.Task.getAll flags.baseUrl)
+              , Task.attempt (always NoOp) (focus "inputText")
+              , updateUrlCmd
+              ]
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -91,6 +108,15 @@ update msg model =
     case msg of
         NoOp ->
             model ! []
+
+        LocationChanged loc ->
+            case Routes.locationToRoute loc of
+                Nothing ->
+                    { model | route = Routes.ShowAll }
+                        ! [ Nav.modifyUrl (Routes.routeToUrl Routes.ShowAll) ]
+
+                Just route ->
+                    { model | route = route } ! []
 
         GetTasksResponse (Err err) ->
             { model
@@ -241,19 +267,31 @@ subscriptions model =
 
 view : Model -> Html Msg
 view model =
-    Grid.container [ Attr.class "container h-100" ]
-        [ Grid.row
-            [ Row.attrs [ Attr.class "h-100 justify-content-center align-items-center" ] ]
-            [ Grid.col
-                [ Col.md12, Col.middleMd ]
-                [ Card.config [ Card.outlineLight ]
-                    |> Card.headerH1 [] [ Html.text "Elm-Todo-Liste" ]
-                    |> Card.block [] [ Block.custom (viewNewTaskForm model |> Html.map NewTaskMsg) ]
-                    |> Card.listGroup (List.map (viewTask model) (Tasks.getSortedTaskList model))
-                    |> Card.view
+    let
+        filter =
+            case model.route of
+                Routes.ShowAll ->
+                    Tasks.All
+
+                Routes.ShowCompleted ->
+                    Tasks.Completed
+
+                Routes.ShowPending ->
+                    Tasks.Pending
+    in
+        Grid.container [ Attr.class "container h-100" ]
+            [ Grid.row
+                [ Row.attrs [ Attr.class "h-100 justify-content-center align-items-center" ] ]
+                [ Grid.col
+                    [ Col.md12, Col.middleMd ]
+                    [ Card.config [ Card.outlineLight ]
+                        |> Card.headerH1 [] [ Html.text "Elm-Todo-Liste" ]
+                        |> Card.block [] [ Block.custom (viewNewTaskForm model |> Html.map NewTaskMsg) ]
+                        |> Card.listGroup (List.map (viewTask model) (Tasks.getSortedTaskList filter model))
+                        |> Card.view
+                    ]
                 ]
             ]
-        ]
 
 
 viewNewTaskForm : Model -> Html NewTaskMsg
