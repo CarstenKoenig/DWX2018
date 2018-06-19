@@ -25,7 +25,6 @@ import Model.Tasks as Tasks exposing (Tasks)
 import Navigation as Nav
 import Routes
 import Task
-import Debug
 
 
 main : Program Flags Model Msg
@@ -41,7 +40,7 @@ main =
 
 type alias Model =
     { flags : Flags
-    , route : Routes.Route
+    , filter : Tasks.Filter
     , isBusy : Bool
     , httpError : Maybe Http.Error
     , tasks : Tasks
@@ -57,6 +56,7 @@ type alias Flags =
 type Msg
     = NoOp
     | LocationChanged Nav.Location
+    | ChangeFilter Tasks.Filter
     | GetTasksResponse (Result Http.Error Tasks)
     | UpdateTaskResponse (Result Http.Error Task)
     | NewTaskMsg NewTaskMsg
@@ -81,16 +81,16 @@ type TaskItemMsg
 init : Flags -> Nav.Location -> ( Model, Cmd Msg )
 init flags loc =
     let
-        ( currentRoute, updateUrlCmd ) =
+        ( currentFilter, updateUrlCmd ) =
             case Routes.locationToRoute loc of
                 Just route ->
-                    ( route, Cmd.none )
+                    ( routeToFilter route, Cmd.none )
 
                 Nothing ->
-                    ( Routes.ShowAll, Nav.modifyUrl (Debug.log "goto: " <| Routes.routeToUrl Routes.ShowAll) )
+                    ( Tasks.All, Nav.modifyUrl (Routes.routeToUrl Routes.ShowAll) )
     in
         { flags = flags
-        , route = currentRoute
+        , filter = currentFilter
         , httpError = Nothing
         , isBusy = True
         , tasks = Tasks.empty
@@ -103,6 +103,32 @@ init flags loc =
               ]
 
 
+routeToFilter : Routes.Route -> Tasks.Filter
+routeToFilter route =
+    case route of
+        Routes.ShowAll ->
+            Tasks.All
+
+        Routes.ShowPending ->
+            Tasks.Pending
+
+        Routes.ShowCompleted ->
+            Tasks.Completed
+
+
+filterToRoute : Tasks.Filter -> Routes.Route
+filterToRoute filter =
+    case filter of
+        Tasks.All ->
+            Routes.ShowAll
+
+        Tasks.Pending ->
+            Routes.ShowPending
+
+        Tasks.Completed ->
+            Routes.ShowCompleted
+
+
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
@@ -110,13 +136,17 @@ update msg model =
             model ! []
 
         LocationChanged loc ->
-            case Routes.locationToRoute loc of
+            case Routes.locationToRoute loc |> Maybe.map routeToFilter of
                 Nothing ->
-                    { model | route = Routes.ShowAll }
+                    { model | filter = Tasks.All }
                         ! [ Nav.modifyUrl (Routes.routeToUrl Routes.ShowAll) ]
 
-                Just route ->
-                    { model | route = route } ! []
+                Just filter ->
+                    { model | filter = filter } ! []
+
+        ChangeFilter filter ->
+            { model | filter = filter }
+                ! [ Nav.newUrl (Routes.routeToUrl (filterToRoute filter)) ]
 
         GetTasksResponse (Err err) ->
             { model
@@ -267,30 +297,47 @@ subscriptions model =
 
 view : Model -> Html Msg
 view model =
-    let
-        filter =
-            case model.route of
-                Routes.ShowAll ->
-                    Tasks.All
-
-                Routes.ShowCompleted ->
-                    Tasks.Completed
-
-                Routes.ShowPending ->
-                    Tasks.Pending
-    in
-        Grid.container [ Attr.class "container h-100" ]
-            [ Grid.row
-                [ Row.attrs [ Attr.class "h-100 justify-content-center align-items-center" ] ]
-                [ Grid.col
-                    [ Col.md12, Col.middleMd ]
-                    [ Card.config [ Card.outlineLight ]
-                        |> Card.headerH1 [] [ Html.text "Elm-Todo-Liste" ]
-                        |> Card.block [] [ Block.custom (viewNewTaskForm model |> Html.map NewTaskMsg) ]
-                        |> Card.listGroup (List.map (viewTask model) (Tasks.getSortedTaskList filter model))
-                        |> Card.view
-                    ]
+    Grid.container [ Attr.class "container h-100" ]
+        [ Grid.row
+            [ Row.attrs [ Attr.class "h-100 justify-content-center align-items-center" ] ]
+            [ Grid.col
+                [ Col.md12, Col.middleMd ]
+                [ Card.config [ Card.outlineLight ]
+                    |> Card.headerH1 [] [ Html.text "Elm-Todo-Liste" ]
+                    |> Card.block [] [ Block.custom (viewNewTaskForm model |> Html.map NewTaskMsg) ]
+                    |> Card.block [] [ Block.custom (viewFilterOptions model) ]
+                    |> Card.listGroup (List.map (viewTask model) (Tasks.getSortedTaskList model.filter model))
+                    |> Card.view
                 ]
+            ]
+        ]
+
+
+viewFilterOptions : Model -> Html Msg
+viewFilterOptions model =
+    let
+        viewPill f txt =
+            Html.li
+                [ Attr.class "nav-item" ]
+                [ Html.a
+                    [ Attr.href "javascript:void(0)"
+                    , Attr.class "nav-link"
+                    , Attr.classList [ ( "active", f == model.filter ) ]
+                    , Ev.onClick
+                        (if f == model.filter then
+                            NoOp
+                         else
+                            ChangeFilter f
+                        )
+                    ]
+                    [ Html.text txt ]
+                ]
+    in
+        Html.ul
+            [ Attr.class "nav nav-pills nav-fill" ]
+            [ viewPill Tasks.All "alle"
+            , viewPill Tasks.Pending "zu erledigen"
+            , viewPill Tasks.Completed "erledigt"
             ]
 
 
