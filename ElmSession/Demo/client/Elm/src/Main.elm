@@ -83,11 +83,11 @@ init flags loc =
     let
         ( currentFilter, updateUrlCmd ) =
             case Routes.locationToRoute loc of
-                Just route ->
-                    ( routeToFilter route, Cmd.none )
+                Just (Routes.Show filter) ->
+                    ( filter, Cmd.none )
 
                 Nothing ->
-                    ( Tasks.All, Nav.modifyUrl (Routes.routeToUrl Routes.ShowAll) )
+                    ( Tasks.All, Nav.modifyUrl (Routes.routeToUrl (Routes.Show Tasks.All)) )
     in
         { flags = flags
         , filter = currentFilter
@@ -103,32 +103,6 @@ init flags loc =
               ]
 
 
-routeToFilter : Routes.Route -> Tasks.Filter
-routeToFilter route =
-    case route of
-        Routes.ShowAll ->
-            Tasks.All
-
-        Routes.ShowPending ->
-            Tasks.Pending
-
-        Routes.ShowCompleted ->
-            Tasks.Completed
-
-
-filterToRoute : Tasks.Filter -> Routes.Route
-filterToRoute filter =
-    case filter of
-        Tasks.All ->
-            Routes.ShowAll
-
-        Tasks.Pending ->
-            Routes.ShowPending
-
-        Tasks.Completed ->
-            Routes.ShowCompleted
-
-
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
@@ -136,17 +110,17 @@ update msg model =
             model ! []
 
         LocationChanged loc ->
-            case Routes.locationToRoute loc |> Maybe.map routeToFilter of
+            case Routes.locationToRoute loc of
                 Nothing ->
                     { model | filter = Tasks.All }
-                        ! [ Nav.modifyUrl (Routes.routeToUrl Routes.ShowAll) ]
+                        ! [ Nav.modifyUrl (Routes.routeToUrl (Routes.Show Tasks.All)) ]
 
-                Just filter ->
+                Just (Routes.Show filter) ->
                     { model | filter = filter } ! []
 
         ChangeFilter filter ->
             { model | filter = filter }
-                ! [ Nav.newUrl (Routes.routeToUrl (filterToRoute filter)) ]
+                ! [ Nav.newUrl (Routes.routeToUrl (Routes.Show filter)) ]
 
         GetTasksResponse (Err err) ->
             { model

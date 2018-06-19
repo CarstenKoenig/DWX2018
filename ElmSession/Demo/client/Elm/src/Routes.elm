@@ -2,6 +2,7 @@ module Routes exposing (Route(..), locationToRoute, routeToUrl)
 
 import Navigation as Nav exposing (Location)
 import UrlParser as Url exposing (Parser, (</>))
+import Model.Tasks exposing (Filter(..))
 
 
 type alias Url =
@@ -9,9 +10,7 @@ type alias Url =
 
 
 type Route
-    = ShowAll
-    | ShowPending
-    | ShowCompleted
+    = Show Filter
 
 
 locationToRoute : Location -> Maybe Route
@@ -22,13 +21,13 @@ locationToRoute =
 routeToUrl : Route -> Url
 routeToUrl route =
     case route of
-        ShowAll ->
+        Show All ->
             "/"
 
-        ShowPending ->
+        Show Pending ->
             "/pending"
 
-        ShowCompleted ->
+        Show Completed ->
             "/completed"
 
 
@@ -39,7 +38,7 @@ route =
             Url.top
     in
         Url.oneOf
-            [ Url.map ShowAll basePart
-            , Url.map ShowPending (basePart </> Url.s "pending")
-            , Url.map ShowCompleted (basePart </> Url.s "completed")
+            [ Url.map (Show All) basePart
+            , Url.map (Show Pending) (basePart </> Url.s "pending")
+            , Url.map (Show Completed) (basePart </> Url.s "completed")
             ]
