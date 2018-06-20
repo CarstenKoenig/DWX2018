@@ -21,11 +21,12 @@ Ablauf:
 - optional: ganzes Projekt vorstellen
 - weitere Hinweise
 - FAQ
+
 :::
 
 ## was ist Elm?
 
-- Web-Frontendentwicklung 
+- Web-Frontendentwicklung
 - wird in JavaScript übersetzt
 - **rein** funktionale Sprache
 - ML Syntaxfamilie (Ocaml, F#, Haskell, ...)
@@ -169,238 +170,7 @@ program :
   - erzwingt **semver**
 - zeigt Unterschiede zwischen Versionen `elm package diff elm-lang/core 3.0.0 4.0.0`
 
-***
-
-## The Elm Architecture
-
----
-
-### Model
-
-Beschreibung des gesamten Zustands eines Programms
-
-```elm
-type alias Model =
-    { augenzahl : Int
-    }
-```
-
----
-
-### View
-
-Wandelt das **Modell** in eine HTML Darstellung um, die Elm dann anzeigt
-
-```elm
-view : Model -> Html Never
-view model =
-    viewDice model.augenzahl
-```
-
----
-
-### Messages
-
-zeigt eine gewünschte Zustandsänderung an
-
-```elm
-type Msg
-    = AugenzahlAendern Int
-```
-
-werden z.B. in der View über Events ausgelöst
-
-```elm
-viewSwitchButton n =
-    button
-        [ onClick (AugenzahlAendern n)
-```
-
----
-
-### Update
-
-verknüpft eine **Message** mit aktuellen Zustand und liefert neuen Zustand
-
-```elm
-update : Msg -> Model -> Model
-update msg model =
-    case msg of
-        AugenzahlAendern n ->
-            { model | augenzahl = n }
-```
-
-der neue Zustand wird dann über `view` angezeigt
-
----
-
-### neue `main`
-
-```elm
-main : Program Never Model Msg
-main =
-    beginnerProgram
-        { model = init
-        , update = update
-        , view = view
-        }
-```
-
----
-
-## Effekte
-
-- bisher alles **pure**
-- wie bekommen wir Seiteneffekte?
-  - Zufallszahl
-  - HTTP Requests
-  - Systemzeit
-  - ...
-
----
-
-### Subscriptions
-
-Wenn wir über nicht von der View ausgelöste Ereignisse benachrichtigt werden wollen
-
-- WebSocket Nachricht
-- Taste gedrückt
-- Maus bewegt
-- Timer
-- ...
-
----
-
-### Subscriptions
-
-```elm
-subscriptions : Model -> Sub Msg
-subscriptions model =
-  Time.every second Tick
-```
-
----
-
-### Commands
-
-Lassen uns Seiteneffekte auslösen
-
-- HTTP Request
-- Zufallszahl erzeugen
-- ...
-
----
-
-### Commands
-
-```elm
-update msg model =
-    case msg of
-	    ...
-
-        ZufaelligAendern ->
-            ( model, zufallszahlErzeugen )
-
-
-zufallszahlErzeugen : Cmd Msg
-zufallszahlErzeugen =
-    Rnd.generate AugenzahlAendern (Rnd.int 1 6)
-```
-
----
-
-### neue `main`
-
-```elm
-main : Program Never Model Msg
-main =
-    program
-        { init = init
-        , update = update
-        , view = view
-        , subscriptions = always Sub.none
-        }
-```
-
-***
-
-## Komponenten mit der TEA
-
----
-
-### Dice - Komponente
-
-- in eigenes Modul mit entsprechenden `init`, `update`, `view`, `Cmd` Funktionen
-- und eigenem `Model`, `Msg` Typ
-
-
-```elm
-module Dice exposing (Model, Msg, init, update, view, random)
-```
-
----
-
-### in Main
-
-Komponenten-Model in `Model` aufnehmen:
-
-
-```elm
-type alias Model =
-    { dice : Dice.Model
-    }
-
-```
-
----
-
-### in Main
-
-Komponenten-*Messages* wrappen
-
-```elm
-type Msg
-    = DiceMsg Dice.Msg
-    | ZufaelligAendern
-```
-
----
-
-### in Main
-
-Mappen der Komponenten-Messages, Commands, Subscriptions 
-mit `Html.map`, `Cmd.map` und `Sub.map`
-
-```elm
-init : ( Model, Cmd Msg )
-init =
-    let
-        ( diceModel, diceInitCmd ) =
-            Dice.init
-    in
-        ( Model diceModel, Cmd.map DiceMsg diceInitCmd )
-```
-
----
-
-## Demo mehrere Kopien
-
-***
-
-## Einbetten in HTML
-
----
-
-```html
-  <div id="main"></div>
-  <script src="app.js"></script>
-  <script>
-    var node = document.getElementById('main');
-    var app = Elm.App.embed(node);
-  </script>
-```
-
-***
+# JavaScript Interop
 
 ## Ports
 
@@ -410,22 +180,21 @@ init =
 - `port name : output -> Cmd msg` für Elm nach JS
 - `port name : (input -> msg) -> Sub msg` für JS nach Elm
 
-
-```elm
+```haskell
 port module Alert exposing (..)
 
 
 port show : String -> Cmd msg
-``` 
+```
 
 ---
 
 Javascript kann `Cmd` Ports *subscriben*:
 
 ```js
-var app = Elm.TeaDemoPorts.embed(node);
+var app = Elm.Main.embed(node);
 app.ports.show.subscribe (function(text){
-	alert(text);
+  alert(text);
 });
 ```
 
@@ -433,18 +202,17 @@ und an `Sub` Ports senden:
 
 ```js
 app.ports.name.send(input)
-``` 
+```
 
 ---
 
 - Daten über *Ports* übertragen
-- es gelten [Einschränkungen](https://guide.elm-lang.org/interop/javascript.html#customs-and-border-protection)
+- automatische [Konvertierung](https://guide.elm-lang.org/interop/javascript.html#customs-and-border-protection) der meisten Elm-Datentypen
 - `Value` zum Austausch empfohlen
-  - Verwendung über `Decoder` 
+  - Verwendung über `Decoder`
   - und [`decodeValue`](http://package.elm-lang.org/packages/elm-lang/core/5.1.1/Json-Decode#decodeValue)
 
-
-*** 
+# Vielen Dank
 
 ## Links und co.
 
@@ -452,12 +220,3 @@ app.ports.name.send(input)
 - Installieren: [https://guide.elm-lang.org/install.html](https://guide.elm-lang.org/install.html)
 - Package Verzeichnis / Docs: [http://package.elm-lang.org/](http://package.elm-lang.org/)
 - *fancy Search* [https://klaftertief.github.io/elm-search/](https://klaftertief.github.io/elm-search/)
-
-***
-
-# Vielen Dank
-
-
-
-
-
