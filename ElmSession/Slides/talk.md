@@ -5,10 +5,9 @@ date: 26. Juni 2018
 github: https://github.com/CarstenKoenig/DWX2018 
 ---
 
-## Einstieg in Elm
+## Code / Slides
 
-
-Code / Slides: [github.com/CarstenKoenig/DWX2018](https://github.com/CarstenKoenig/DWX2018)
+[github.com/CarstenKoenig/DWX2018](https://github.com/CarstenKoenig/DWX2018)
 
 :::notes
 Ablauf:
@@ -24,9 +23,7 @@ Ablauf:
 - FAQ
 :::
 
-***
-
-## Elm
+## was ist Elm?
 
 - Web-Frontendentwicklung 
 - wird in JavaScript übersetzt
@@ -37,21 +34,60 @@ Ablauf:
 Help
 :::
 
-***
+# **T**he **E**lm **A**rchitecture
 
-## Tools und Installation
+:::notes
+Einführung
+:::
+
+## Model
+
+![Zustand](../images/Model.png)
+
+:::notes
+
+- single source of truth
+- der Zustand der Applikation
+
+:::
+
+## View
+
+![`view : Model -> Html`](../images/View.png)
 
 ---
 
-### Installation
+![Runtime <-> DOM](../images/ViewRuntime.png)
+
+## Events
+
+![`: Html Msg`](../images/Update1.png)
+
+---
+
+![](../images/Update2.png)
+
+---
+
+![`update : Msg -> Model ..`](../images/Update3.png)
+
+---
+
+![`update : Msg -> Model -> Model`](../images/Update4.png)
+
+## Elm Architektur
+
+![TEA](../images/TEA.png)
+
+# Tools und Installation
+
+## Installation
 
 - Installer für Windows und Mac
 - Alle Plattformen: `npm install -g elm`
 - empfehlenswert: `npm install -g elm-format`
 
----
-
-### Editor
+## Editor
 
 - Online:
   - TryElm [http://elm-lang.org/try](http://elm-lang.org/try)
@@ -60,16 +96,12 @@ Help
   - VS.code mit [vscode-elm](https://github.com/Krzysztof-Cieslak/vscode-elm)
   - Atom, Brackets, Emacs, IntelliJ, ... siehe [Elm Guide](https://guide.elm-lang.org/install.html)
   
---- 
-
-### elm make
+## elm make
 
 - initialisieren eines Projekt `elm make`
 - kompilieren eines Projekts nach JavaScript `elm make Main.elm --output=main.js`
 
----
-
-### elm repl
+## elm repl
 
 **R**ead **E**val **P**rint **L**oop
 
