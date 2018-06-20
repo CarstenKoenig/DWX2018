@@ -79,6 +79,51 @@ Einführung
 
 ![TEA](../images/TEA.png)
 
+# DEMO
+
+# TEA für Fortgeschrittene
+
+## Seiteneffekte
+
+::: incremental
+
+- wie definieren wir einen Timer?
+  - **Subscriptions**
+- wie kommunizieren wir mit dem Backend?
+  - **Commands**
+
+:::
+
+## Sub
+
+![`subscribe`](../images/Sub1.png)
+
+---
+
+![Verarbeitung über `update`](../images/Sub2.png)
+
+## Cmd
+
+![Runtime bekommt `Cmd`](../images/Cmd1.png)
+
+---
+
+![Verarbeitung über `update`](../images/Cmd2.png)
+
+## erweitertes Program
+
+```haskell
+program :
+    { init          : (model, Cmd msg)
+    , update        : msg -> model -> (model, Cmd msg)
+    , subscriptions : model -> Sub msg
+    , view          : model -> Html msg
+    }
+    -> Program Never model msg
+```
+
+# DEMO
+
 # Tools und Installation
 
 ## Installation
