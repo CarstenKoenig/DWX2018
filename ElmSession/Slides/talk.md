@@ -106,7 +106,7 @@ auch **MVU** genannt
 
 ## Sub
 
-![`subscribe`](../images/Sub1.png)
+![`subscriptions`](../images/Sub1.png)
 
 ---
 
@@ -171,6 +171,68 @@ Http.post : String -> Body -> Decoder a -> Request a
 
 ## DEMO
 
+# JavaScript Interop
+
+## Elm-App einbetten / Flags
+
+```html
+  <script src="elm.js"></script>
+
+  <div id="main"></div>
+
+  <script>
+    var node = document.getElementById('main');
+    var app = Elm.Main.embed(node);
+
+    // ..
+
+    var app = Elm.Main.fullscreen(
+      { baseUrl: 'http://localhost:8080/' });
+  </script>
+
+```
+
+## Ports
+
+---
+
+## Elm &rarr; JS
+
+Elm:
+
+```haskell
+port module PortModule exposing (..)
+
+port toJS : String -> Cmd msg
+```
+
+JavaScript:
+
+```js
+var app = Elm.Main.embed(node);
+app.ports.toJS.subscribe (function(text){
+  alert(text);
+});
+```
+
+---
+
+## Elm &larr; JS
+
+Elm:
+
+```haskell
+port module PortModule exposing (..)
+
+port fromJs : (String -> msg) -> Sub msg
+```
+
+JavaScript:
+
+```js
+app.ports.fromJS.send(input);
+```
+
 # Tools und Installation
 
 ## Installation
@@ -216,47 +278,47 @@ Http.post : String -> Body -> Decoder a -> Request a
   - erzwingt **semver**
 - zeigt Unterschiede zwischen Versionen `elm package diff elm-lang/core 3.0.0 4.0.0`
 
-# JavaScript Interop
+---
 
-## Ports
+### elm-format
+
+automatisches Formatieren von `.elm` Dateien - weit verbeitet in der Community
+
+    npm install -g elm-format
 
 ---
 
-- sollten in eigenem `port module` liegen
-- `port name : output -> Cmd msg` für Elm nach JS
-- `port name : (input -> msg) -> Sub msg` für JS nach Elm
+### elm-live
 
-```haskell
-port module Alert exposing (..)
+auto-compile/reload nach Speichern von Quellcodedateien
 
+    npm install -g elm-live
 
-port show : String -> Cmd msg
-```
+[architectcodes/elm-live](https://github.com/architectcodes/elm-live)
 
 ---
 
-Javascript kann `Cmd` Ports *subscriben*:
+### elm-analyse
 
-```js
-var app = Elm.Main.embed(node);
-app.ports.show.subscribe (function(text){
-  alert(text);
-});
-```
+*linter*  für Elm
 
-und an `Sub` Ports senden:
+    npm install -g elm-analyse
 
-```js
-app.ports.name.send(input)
-```
+[stil4m/elm-analyse](https://github.com/stil4m/elm-analyse)
 
 ---
 
-- Daten über *Ports* übertragen
-- automatische [Konvertierung](https://guide.elm-lang.org/interop/javascript.html#customs-and-border-protection) der meisten Elm-Datentypen
-- `Value` zum Austausch empfohlen
-  - Verwendung über `Decoder`
-  - und [`decodeValue`](http://package.elm-lang.org/packages/elm-lang/core/5.1.1/Json-Decode#decodeValue)
+### html-to-elm
+
+HTML &rarr; Elm [Online-Konverter](https://mbylstra.github.io/html-to-elm/)
+
+---
+
+### json-to-elm
+
+JSON &rarr; Elm [Online-Konverter](https://eeue56.github.io/json-to-elm/)
+
+Erstellt *Decoder* und *Encoder* aus einem JSON Text
 
 # Vielen Dank
 
