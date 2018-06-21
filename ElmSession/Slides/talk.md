@@ -13,7 +13,6 @@ github: https://github.com/CarstenKoenig/DWX2018
 Ablauf:
 
 - was ist Elm
-- Demo: Todo / Einstieg Html
 - TEA 1
 - Demo: `beginnerProgram`
 - TEA 2 / Decoder
@@ -26,19 +25,29 @@ Ablauf:
 
 ## was ist Elm?
 
-- Web-Frontendentwicklung
+- *freundliche* funktionale Sprache
+  - ML Syntaxfamilie (Ocaml, F#, Haskell, ...)
+  - *pure*/*total*
 - wird in JavaScript übersetzt
-- **rein** funktionale Sprache
-- ML Syntaxfamilie (Ocaml, F#, Haskell, ...)
+- Web-Frontendentwicklung
 
 :::notes
-Help
+
+- Beginnerfreundlich, gute Kompilerfehler, gute Dokumentation, nicht zu abstrakt
+- recht einfach zu erlernen
+- etwas gewöhnungsbedürftige Syntax - lohnt sich aber zu lernen
+
 :::
 
 # **T**he **E**lm **A**rchitecture
 
 :::notes
-Einführung
+
+man könnte sagen Elm ist diese Architektur
+mit einer Sprache darum herum
+
+auch **MVU** genannt
+
 :::
 
 ## Model
@@ -54,7 +63,7 @@ Einführung
 
 ## View
 
-![`view : Model -> Html`](../images/View.png)
+![`view : Model -> Html ..`](../images/View.png)
 
 ---
 
@@ -80,7 +89,7 @@ Einführung
 
 ![TEA](../images/TEA.png)
 
-# DEMO
+## DEMO
 
 # TEA für Fortgeschrittene
 
@@ -123,7 +132,44 @@ program :
     -> Program Never model msg
 ```
 
-# DEMO
+# Decoder / Requests
+
+## Json &rarr; Elm-Typ
+
+```haskell
+decodeString : Decoder a -> String -> Result String a
+```
+
+## primitive Decoder
+
+```haskell
+Json.Decode.int    : Decoder Int
+Json.Decode.string : Decoder String
+Json.Decode.bool   : Decoder Bool
+..
+```
+
+## Kombinatoren
+
+```haskell
+Json.Decode.list  :              Decoder a -> Decoder (List a)
+Json.Decode.field : String ->    Decoder a -> Decoder a
+
+Json.Decode.map2  : (a -> b -> val) ->
+                    Decoder a -> Decoder b -> Decoder val
+
+```
+
+## Kommunikation mit Backend
+
+```haskell
+Http.send : (Result Error a -> msg) -> Request a -> Cmd msg
+
+Http.get  : String         -> Decoder a -> Request a
+Http.post : String -> Body -> Decoder a -> Request a
+```
+
+## DEMO
 
 # Tools und Installation
 
