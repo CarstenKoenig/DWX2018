@@ -5,21 +5,16 @@ date: 26. Juni 2018
 github: https://github.com/CarstenKoenig/DWX2018 
 ---
 
-## Code / Slides
-
-[github.com/CarstenKoenig/DWX2018](https://github.com/CarstenKoenig/DWX2018)
+# ![Elm](../images/Elm.png)
 
 :::notes
-Ablauf:
 
-- was ist Elm
-- TEA 1
-- Demo: `beginnerProgram`
-- TEA 2 / Decoder
-- Demo: Model, Decoder, Http
-- optional: ganzes Projekt vorstellen
-- weitere Hinweise
-- FAQ
+Agenda:
+
+- paar kurze Worte zu Elm
+- Elm Architektur (Demo)
+- TEA ausgebaut (Sub, Cmd, Decoder, Requests, Demo)
+- Fragen
 
 :::
 
@@ -50,14 +45,15 @@ auch **MVU** genannt
 
 :::
 
-## Model
+## Zustand
 
-![Zustand](../images/Model.png)
+![single source of truth](../images/Model.png)
 
 :::notes
 
-- single source of truth
 - der Zustand der Applikation
+- wird von der Runtime verwaltet
+- wie alles in Elm *unveränderlich*
 
 :::
 
@@ -65,13 +61,34 @@ auch **MVU** genannt
 
 ![`view : Model -> Html ..`](../images/View.png)
 
+:::notes
+
+- immer wenn *neu gezeichnet* werden soll
+- `view` wandelt Model in eine VDom Modell um
+
+:::
+
 ---
 
 ![Runtime <-> DOM](../images/ViewRuntime.png)
 
+:::notes
+
+- Runtime *diff*t die Rep. mit DOM und ändert nur nötige Knoten
+
+:::
+
 ## Events
 
 ![`: Html Msg`](../images/Update1.png)
+
+:::notes
+
+- VDom kann Events binden
+- Ereignisse geben Messages weiter
+- Typ der Message ist durch den Typ der Rep. fixiert
+
+:::
 
 ---
 
@@ -323,6 +340,8 @@ Erstellt *Decoder* und *Encoder* aus einem JSON Text
 # Vielen Dank
 
 ## Links und co.
+
+- Code & Slides [github.com/CarstenKoenig/DWX2018](https://github.com/CarstenKoenig/DWX2018)
 
 - Elm Guide Online: [https://guide.elm-lang.org/](https://guide.elm-lang.org/)
 - Installieren: [https://guide.elm-lang.org/install.html](https://guide.elm-lang.org/install.html)
