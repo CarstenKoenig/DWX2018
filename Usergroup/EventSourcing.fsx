@@ -1,5 +1,6 @@
 
 open System
+open System.Collections.Generic
 
 module EventStore =
 
@@ -14,29 +15,27 @@ module EventStore =
     abstract ProjectValue : fold:('state -> 'ev -> 'state) -> init:'state -> 'state
 
 
-  type private Stream<'ev> (evs : 'ev seq) =
-    let _events = Collections.Generic.List<'ev> evs
-    
+  type private Stream<'ev> (events : List<obj>) =
     interface IEventStream<'ev> with
-      member __.AddEvent ev = _events.Add ev
+      member __.AddEvent ev = events.Add (box ev)
 
       member __.ProjectValue fold init =
-        Seq.fold fold init _events
+        events
+        |> Seq.cast
+        |> Seq.fold fold init
 
 
   /// ein Eventstore verwaltet die Streams zu den einzelnen Aggregaten
   type Store() =
-    let _streams = Collections.Generic.Dictionary<Id, Type*obj>()
+    let _streams = Collections.Generic.Dictionary<Id, List<obj>>()
     let getStream id : Stream<'ev> = 
       match _streams.TryGetValue id with
       | (false, _) ->
-        let stream = Stream<'ev> Seq.empty
-        _streams.Add(id, (typeof<'ev>, box stream))
-        stream
-      | (true, (t, stream)) when t = typeof<'ev> ->
-        unbox stream
-      | (true, (t, _)) ->
-        invalidOp (sprintf "the requested stream only accepcts events of type %s" t.Name)
+        let list = List<obj>()
+        _streams.Add(id, list)
+        Stream<'ev> list
+      | (true, list) ->
+        Stream<'ev> list
 
     member __.GetStream<'ev> id =
       getStream id :> IEventStream<'ev>
