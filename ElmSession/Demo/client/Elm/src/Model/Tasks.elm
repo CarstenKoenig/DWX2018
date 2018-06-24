@@ -5,6 +5,7 @@ module Model.Tasks
         , empty
         , fromList
         , insert
+        , delete
         , get
         , getSortedTaskList
         , decoder
@@ -42,6 +43,11 @@ fromList =
 insert : Task -> Tasks -> Tasks
 insert task =
     Dict.insert task.id task
+
+
+delete : TaskId -> Tasks -> Tasks
+delete taskId =
+    Dict.remove taskId
 
 
 get : TaskId -> TasksRecord rest -> Maybe Task

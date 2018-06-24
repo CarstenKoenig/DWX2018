@@ -1,6 +1,7 @@
 module Main exposing (..)
 
 import Api.Task exposing (Url)
+import Bootstrap.Alert as Alert
 import Bootstrap.Button as Button
 import Bootstrap.ButtonGroup as BGroup
 import Bootstrap.Card as Card
@@ -21,6 +22,7 @@ import Html.Events as Ev
 import Http
 import Keyboard
 import Model.Task exposing (TaskId, Task)
+import Model.TaskChannel as TC
 import Model.Tasks as Tasks exposing (Tasks)
 import Navigation as Nav
 import Routes
@@ -43,6 +45,7 @@ type alias Model =
     , filter : Tasks.Filter
     , isBusy : Bool
     , httpError : Maybe Http.Error
+    , wsError : Maybe String
     , tasks : Tasks
     , inputText : String
     , editTask : Maybe ( TaskId, String )
@@ -59,6 +62,8 @@ type Msg
     | ChangeFilter Tasks.Filter
     | GetTasksResponse (Result Http.Error Tasks)
     | UpdateTaskResponse (Result Http.Error Task)
+    | DeleteTaskReceived TaskId
+    | WebSocketError String
     | NewTaskMsg NewTaskMsg
     | TaskItemMsg TaskItemMsg
     | KeyDown Keyboard.KeyCode
@@ -92,6 +97,7 @@ init flags loc =
         { flags = flags
         , filter = currentFilter
         , httpError = Nothing
+        , wsError = Nothing
         , isBusy = True
         , tasks = Tasks.empty
         , inputText = ""
@@ -159,6 +165,16 @@ update msg model =
                     , editTask = Nothing
                 }
                     ! [ Task.attempt (always NoOp) (focus "inputText") ]
+
+        WebSocketError error ->
+            { model | wsError = Just error } ! []
+
+        DeleteTaskReceived taskId ->
+            let
+                newTasks =
+                    Tasks.delete taskId model.tasks
+            in
+                { model | tasks = newTasks } ! []
 
         NewTaskMsg newMsg ->
             updateNew newMsg model
@@ -266,7 +282,25 @@ updateItem msg model =
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
-    Keyboard.downs KeyDown
+    let
+        kb =
+            Keyboard.downs KeyDown
+
+        ws =
+            Api.Task.listen model.flags.baseUrl WebSocketError mapMsg
+
+        mapMsg msg =
+            case msg of
+                TC.NewTask task ->
+                    UpdateTaskResponse (Ok task)
+
+                TC.UpdateTask task ->
+                    UpdateTaskResponse (Ok task)
+
+                TC.DeleteTask taskId ->
+                    DeleteTaskReceived taskId
+    in
+        Sub.batch [ kb, ws ]
 
 
 view : Model -> Html Msg
@@ -284,7 +318,19 @@ view model =
                     |> Card.view
                 ]
             ]
+        , viewError model.wsError
+        , viewError (Maybe.map toString model.httpError)
         ]
+
+
+viewError : Maybe String -> Html msg
+viewError error =
+    case error of
+        Nothing ->
+            Html.text ""
+
+        Just text ->
+            Alert.simpleDanger [] [ Html.text text ]
 
 
 viewFilterOptions : Model -> Html Msg

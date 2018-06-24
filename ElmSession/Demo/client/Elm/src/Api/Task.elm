@@ -1,10 +1,12 @@
-module Api.Task exposing (Url, get, getAll, update, delete, new)
+module Api.Task exposing (Url, get, getAll, update, delete, new, listen)
 
 import Http exposing (Request)
 import Json.Decode as Json
 import Json.Encode as Enc
 import Model.Task exposing (TaskId, Task)
+import Model.TaskChannel as TC
 import Model.Tasks as Tasks exposing (Tasks)
+import WebSocket as WS
 
 
 type alias Url =
@@ -50,3 +52,28 @@ delete baseUrl taskId =
 new : Url -> String -> Request Task
 new baseUrl text =
     Http.post (baseUrl ++ "todos") (Http.jsonBody (Enc.string text)) Model.Task.decoder
+
+
+listen : Url -> (String -> msg) -> (TC.TaskChange -> msg) -> Sub msg
+listen baseUrl mapErr mapMsg =
+    let
+        toWs url =
+            if String.startsWith "http://" url then
+                "ws://" ++ String.dropLeft (String.length "http://") url
+            else if String.startsWith "https://" url then
+                "wss://" ++ String.dropLeft (String.length "https://") url
+            else
+                "ws://localhost:8080" ++ url
+
+        decodeMsg text =
+            case Json.decodeString TC.decoder text of
+                Err err ->
+                    mapErr err
+
+                Ok msg ->
+                    mapMsg msg
+
+        url =
+            toWs baseUrl ++ "todos/listen"
+    in
+        WS.listen url decodeMsg
