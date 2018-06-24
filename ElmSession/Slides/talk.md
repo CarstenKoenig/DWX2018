@@ -1,7 +1,7 @@
 ---
 author: Carsten König
 title: Einstieg in Elm
-date: 26. Juni 2018
+date: 25. Juni 2018
 github: https://github.com/CarstenKoenig/DWX2018 
 ---
 
