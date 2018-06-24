@@ -16,10 +16,11 @@ library
   hs-source-dirs:      src
   exposed-modules:     App
   other-modules:       Models
+                     , Db
+                     , Page
                      , RestApi
                      , RouteApi
-                     , Page
-                     , Db
+                     , Ws
   build-depends:       base >= 4.7 && < 5
                      , aeson
                      , blaze-html
@@ -30,6 +31,7 @@ library
                      , servant-server
                      , servant-websockets
                      , sqlite-simple
+                     , stm
                      , text
                      , wai
                      , wai-cors

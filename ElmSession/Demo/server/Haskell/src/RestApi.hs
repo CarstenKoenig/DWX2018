@@ -16,6 +16,8 @@ import           Data.ByteString.Char8 (pack)
 import           Data.Text (Text)
 import qualified Db
 import           Servant
+import           Servant.API.WebSocket (WebSocket)
+import qualified Ws
 
 
 type RestApi = 
@@ -25,14 +27,15 @@ type RestApi =
     :<|> ReqBody '[JSON] Text :> Post '[JSON] Db.Task
     :<|> Capture "id" Db.TaskId :> Delete '[JSON] [Db.Task]
     :<|> Capture "id" Db.TaskId :> Get '[JSON] (Maybe Db.Task)
+    :<|> "listen" :> WebSocket
   )
 
 
-server :: Db.Handle -> Server RestApi
-server handle = hoistServer (Proxy :: Proxy RestApi) toHandle todoHandlers
+server :: Db.Handle -> Ws.Handle -> Server RestApi
+server dbHandle wsHandle = hoistServer (Proxy :: Proxy RestApi) toHandle todoHandlers
   where
     todoHandlers =
-      getAllHandler :<|> updateHandler :<|> newHandler :<|> deleteHandler :<|> queryHandler
+      getAllHandler :<|> updateHandler :<|> newHandler :<|> deleteHandler :<|> queryHandler :<|> wsHandler
 
     getAllHandler =
       Db.listTasks
@@ -40,24 +43,30 @@ server handle = hoistServer (Proxy :: Proxy RestApi) toHandle todoHandlers
     updateHandler task = do
       liftIO $ putStrLn $ "updating task " ++ show (Db.id task)
       Db.modifyTask task
+      Ws.broadcast wsHandle (Ws.UpdateTask task)
       throwError $ redirect (Db.id task)
 
     newHandler txt = do
-      tId <- Db.insertTask txt
-      liftIO $ putStrLn $ "created new task - redirecting to " ++ show tId
-      throwError $ redirect tId
+      task <- Db.insertTask txt
+      liftIO $ putStrLn $ "created new task - redirecting to " ++ show (Db.id task)
+      Ws.broadcast wsHandle (Ws.NewTask task)
+      throwError $ redirect (Db.id task)
 
     deleteHandler tId = do
       Db.deleteTask tId
       liftIO $ putStrLn $ "deleted task " ++ show tId
+      Ws.broadcast wsHandle (Ws.DeleteTask tId)
       throwError redirectAll
   
     queryHandler tId = do
       liftIO $ putStrLn $ "getting task " ++ show tId
       Db.getTask tId
 
+    wsHandler = 
+      Ws.connect wsHandle
+
     toHandle :: ReaderT Db.Handle Handler a -> Handler a
-    toHandle r = runReaderT r handle
+    toHandle r = runReaderT r dbHandle
 
 
 redirect :: Db.TaskId -> ServantErr

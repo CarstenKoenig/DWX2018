@@ -19,6 +19,7 @@ import qualified RestApi
 import           RestApi (RestApi)
 import qualified RouteApi
 import           RouteApi (RouteApi)
+import qualified Ws
 
 
 getPort :: IO Int
@@ -33,18 +34,19 @@ startApp :: IO ()
 startApp = do
   dbPath <- getDbPath
   putStrLn $ "initializing Database in " ++ dbPath
-  handle <- Db.initDb dbPath
+  dbHandle <- Db.initDb dbPath
+  wsHandle <- Ws.initialize
 
   port <- getPort
   putStrLn $ "starting Server on " ++ show port
-  run port $ app handle
+  run port $ app dbHandle wsHandle
 
 
-app :: Db.Handle -> Application
-app handle =
+app :: Db.Handle -> Ws.Handle -> Application
+app dbHandle wsHandle =
   myCors $
   Servant.serve (Proxy :: Proxy (RestApi :<|> RouteApi)) $
-    RestApi.server handle :<|> RouteApi.server
+    RestApi.server dbHandle wsHandle :<|> RouteApi.server
   where
     myCors = cors $ const $ Just myPolicy
     myPolicy = simpleCorsResourcePolicy { corsMethods = myMethods

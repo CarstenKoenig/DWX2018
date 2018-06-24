@@ -67,10 +67,11 @@ listTasks = useHandle $ \conn ->
     toTask (tId,txt,fin) = Task tId txt fin
 
 
-insertTask :: (MonadReader Handle m, MonadIO m) => Text -> m TaskId
+insertTask :: (MonadReader Handle m, MonadIO m) => Text -> m Task
 insertTask txt = useHandle $ \conn -> do
   Sql.execute conn "INSERT INTO todos (task,finished) VALUES (?,0)" (Sql.Only txt)
-  Sql.lastInsertRowId conn
+  tId <- Sql.lastInsertRowId conn
+  return $ Task tId txt False
 
 
 deleteTask :: (MonadReader Handle m, MonadIO m) => TaskId -> m ()
