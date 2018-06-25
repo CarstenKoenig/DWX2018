@@ -20,11 +20,11 @@ Agenda:
 
 ## was ist Elm?
 
+- Web-Frontendentwicklung
 - *freundliche* funktionale Sprache
   - ML Syntaxfamilie (Ocaml, F#, Haskell, ...)
   - *pure*/*total*
-- wird in JavaScript übersetzt
-- Web-Frontendentwicklung
+- *keine Runtime-Exceptions* *
 
 :::notes
 
@@ -57,7 +57,7 @@ auch **MVU** genannt
 
 :::
 
-## View
+## Darstellung
 
 ![`view : Model -> Html ..`](../images/View.png)
 
@@ -78,7 +78,9 @@ auch **MVU** genannt
 
 :::
 
-## Events
+## Zustandsänderungen
+
+ausgelöst durch *Messages*
 
 ![`: Html Msg`](../images/Update1.png)
 
@@ -92,19 +94,11 @@ auch **MVU** genannt
 
 ---
 
-![](../images/Update2.png)
-
----
-
-![`update : Msg -> Model ..`](../images/Update3.png)
-
----
-
 ![`update : Msg -> Model -> Model`](../images/Update4.png)
 
 ## Elm Architektur
 
-![TEA](../images/TEA.png)
+![ModelViewUpdate](../images/TEA.png)
 
 ## DEMO
 
@@ -112,14 +106,10 @@ auch **MVU** genannt
 
 ## Seiteneffekte
 
-::: incremental
-
 - wie definieren wir einen Timer?
   - **Subscriptions**
 - wie kommunizieren wir mit dem Backend?
   - **Commands**
-
-:::
 
 ## Sub
 
