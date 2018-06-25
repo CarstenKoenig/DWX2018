@@ -17,6 +17,8 @@ import Html as Html exposing (Html)
 import Html.Attributes as Attr
 import Html.Events as Ev
 import Http
+import Json.Decode as Json exposing (Decoder)
+import Json.Encode as Enc exposing (Value)
 
 
 main : Program Flags Model Msg
