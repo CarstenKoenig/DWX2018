@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Todo in Elm</title>
+
+  <link rel="stylesheet" href="/lib/bootstrap/dist/css/bootstrap.min.css" />
+  <link rel="stylesheet" href="/lib/fontawesome/dist/fontawesome-all.min.css" />
+  <link rel="stylesheet" href="/style.css" />
+
+</head>
+
+<body>
+  <script src="/lib/jquery/dist/jquery.js"></script>
+  <script src="/lib/popper/dist/popper.js"></script>
+  <script src="/todo.js"></script>
+
+  <script>
+    var app = Elm.Main.fullscreen({ baseUrl: 'http://localhost:8080/' });
+  </script>
+</body>
+
+</html>
