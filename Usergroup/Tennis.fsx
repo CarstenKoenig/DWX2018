@@ -10,67 +10,68 @@ type Unter40 =
         | Dreißig -> "30"
 
 
+type Spieler = 
+    | A | B
+
+let gegenSpieler = 
+    function
+    | A -> B
+    | B -> A
+
+
 type Spielstand =
     | BeideUnter40 of Unter40 * Unter40
-    | Ich40 of Unter40
-    | Gegner40 of Unter40
+    | Spieler40 of Spieler * Unter40
     | Einstand
-    | VorteilIch
-    | VorteilGegner
-    | Gewonnen
-    | Verloren
+    | Vorteil of Spieler
+    | Gewonnen of Spieler
     override this.ToString() =
         match this with
-        | BeideUnter40 (ich,gegner) -> sprintf "%O:%O"  ich gegner
-        | Ich40 gegner -> sprintf "40:%O" gegner
-        | Gegner40 ich -> sprintf "%O:40" ich
+        | BeideUnter40 (a,b) -> sprintf "%O:%O" a b
+        | Spieler40 (A, gegner) -> sprintf "40:%O" gegner
+        | Spieler40 (B, gegner) -> sprintf "%O:40" gegner
         | Einstand -> "Einstand"
-        | VorteilIch -> "Vorteil A"
-        | VorteilGegner -> "Vorteil B"
-        | Gewonnen -> "Spiel A"
-        | Verloren -> "Spiel B"
+        | Vorteil spieler -> sprintf "Vorteil %A" spieler
+        | Gewonnen spieler -> sprintf "Spiel %A" spieler
 
 
 let anfangsStand = 
     BeideUnter40 (Null, Null)
 
 
-let ichPunkte = function
+let aPunktet = 
+    function
     | BeideUnter40 (Null, gegner) -> BeideUnter40 (Fünfzehn, gegner)
     | BeideUnter40 (Fünfzehn, gegner) -> BeideUnter40 (Dreißig, gegner)
-    | BeideUnter40 (Dreißig, gegner) -> Ich40 gegner
-    | Ich40 _ -> Gewonnen
-    | Gegner40 Null -> Gegner40 Fünfzehn
-    | Gegner40 Fünfzehn -> Gegner40 Dreißig
-    | Gegner40 Dreißig -> Einstand
-    | Einstand -> VorteilIch
-    | VorteilIch -> Gewonnen
-    | VorteilGegner -> Einstand
-    | Gewonnen -> failwith "ich habe schon gewonnen"
-    | Verloren -> failwith "zu spät"
+    | BeideUnter40 (Dreißig, gegner) -> Spieler40 (A, gegner)
+    | Spieler40 (A, _) -> Gewonnen A
+    | Spieler40 (B, Null) -> Spieler40 (B, Dreißig)
+    | Spieler40 (B, Fünfzehn) -> Spieler40 (B, Dreißig)
+    | Spieler40 (B, Dreißig) -> Einstand
+    | Einstand -> Vorteil A
+    | Vorteil A -> Gewonnen A
+    | Vorteil B -> Einstand
+    | Gewonnen spieler -> failwith (sprintf "%A hat schon gewonnen" spieler)
 
 
-let gegnersicht = function
+let gegnersicht = 
+    function
     | BeideUnter40 (a,b) -> BeideUnter40 (b,a)
-    | Ich40 a -> Gegner40 a
-    | Gegner40 a -> Ich40 a
+    | Spieler40 (spieler, gegner) -> Spieler40 (gegenSpieler spieler, gegner)
     | Einstand -> Einstand
-    | VorteilIch -> VorteilGegner
-    | VorteilGegner -> VorteilIch
-    | Gewonnen -> Verloren
-    | Verloren -> Gewonnen
+    | Vorteil spieler -> Vorteil (gegenSpieler spieler)
+    | Gewonnen spieler -> Gewonnen (gegenSpieler spieler)
+ 
 
+let bPunktet =
+    gegnersicht >> aPunktet >> gegnersicht
 
-let gegnerPunktet =
-    gegnersicht >> ichPunkte >> gegnersicht
-
-
-type Spieler = A | B
 
 let spiele punktGewinneDurch =
-    let spielerPunktet stand = function
-        | A -> ichPunkte stand
-        | B -> gegnerPunktet stand
+    let spielerPunktet spieler = 
+        function
+        | A -> aPunktet spieler
+        | B -> bPunktet spieler
     punktGewinneDurch
     |> List.scan spielerPunktet anfangsStand
 

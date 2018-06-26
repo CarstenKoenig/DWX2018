@@ -40,6 +40,7 @@
 *)
 
 let zahl = 42
+open System
 let isAnswer = if zahl < 42 then "not the answer"
 
 
@@ -65,6 +66,8 @@ sqr zahl
 
 
 printfn "%d" sqr zahl
+
+printfn "%s" DateTime.Now.ToString()
 
 
 
