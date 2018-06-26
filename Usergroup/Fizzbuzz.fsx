@@ -2,7 +2,28 @@
 
 // Fizz Buzz
 
-// if is just an expression
+for n in [1..15] do
+  if n % 15 = 0 then
+    printfn "FizzBuzz"
+  elif n % 3 = 0 then
+    printfn "Fizz"
+  elif n % 5 = 0 then
+    printfn "Buzz"
+  else
+    printfn "%d" n
+
+
+
+
+
+
+
+
+
+
+
+
+
 let fizzBuzz n =
   if n % 15 = 0 then
     "FizzBuzz"
@@ -13,7 +34,20 @@ let fizzBuzz n =
   else
     string n
 
-// match it
+[1 .. 15]
+|> List.map fizzBuzz
+|> List.iteri (printfn "%d -> %s")
+
+
+
+
+
+
+
+
+
+
+
 let fizzBuzz2 n =
   match (n%3, n%5) with
   | (0,0) -> "FizzBuzz"
@@ -21,7 +55,6 @@ let fizzBuzz2 n =
   | (0,_) -> "Fizz"
   | _     -> string n
 
-// functional programmers loop
-[1 .. 100]
+[1 .. 15]
 |> List.map fizzBuzz2
 |> List.iteri (printfn "%d -> %s")

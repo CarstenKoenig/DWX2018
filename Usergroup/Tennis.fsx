@@ -1,3 +1,4 @@
+
 type Unter40 =
     | Null
     | Fünfzehn
@@ -30,6 +31,10 @@ type Spielstand =
         | Verloren -> "Spiel B"
 
 
+let anfangsStand = 
+    BeideUnter40 (Null, Null)
+
+
 let ichPunkte = function
     | BeideUnter40 (Null, gegner) -> BeideUnter40 (Fünfzehn, gegner)
     | BeideUnter40 (Fünfzehn, gegner) -> BeideUnter40 (Dreißig, gegner)
@@ -41,7 +46,7 @@ let ichPunkte = function
     | Einstand -> VorteilIch
     | VorteilIch -> Gewonnen
     | VorteilGegner -> Einstand
-    | Gewonnen -> failwith "hat schon gewonnen"
+    | Gewonnen -> failwith "ich habe schon gewonnen"
     | Verloren -> failwith "zu spät"
 
 
@@ -62,15 +67,13 @@ let gegnerPunktet =
 
 type Spieler = A | B
 
-
-let anfangsStand = BeideUnter40 (Null, Null)
-
-let spiele (punktGewinneDurch : Spieler list) : Spielstand list =
+let spiele punktGewinneDurch =
     let spielerPunktet stand = function
         | A -> ichPunkte stand
         | B -> gegnerPunktet stand
     punktGewinneDurch
     |> List.scan spielerPunktet anfangsStand
+
 
 // Test
 spiele [A;A;B;A;B;B;A;B;B;B]
