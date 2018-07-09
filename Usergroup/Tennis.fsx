@@ -45,7 +45,7 @@ let aPunktet =
     | BeideUnter40 (Fünfzehn, gegner) -> BeideUnter40 (Dreißig, gegner)
     | BeideUnter40 (Dreißig, gegner) -> Spieler40 (A, gegner)
     | Spieler40 (A, _) -> Gewonnen A
-    | Spieler40 (B, Null) -> Spieler40 (B, Dreißig)
+    | Spieler40 (B, Null) -> Spieler40 (B, Fünfzehn)
     | Spieler40 (B, Fünfzehn) -> Spieler40 (B, Dreißig)
     | Spieler40 (B, Dreißig) -> Einstand
     | Einstand -> Vorteil A
