@@ -9,5 +9,6 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.All" Version="2.0.8" />
     <PackageReference Include="Giraffe" Version="1.1.0" />
-  </ItemGroup>
+    <PackageReference Include="FSharp.Core" Version="4.5.0" />
+   </ItemGroup>
 </Project>
